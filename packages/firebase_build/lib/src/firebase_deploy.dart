@@ -24,8 +24,17 @@ class FirebaseDeployOptions {
   });
 }
 
-Future firebaseWebAppDeploy(String path, FirebaseDeployOptions options) async {
-  var deployDir = join(path, firebaseDefaultHostingDir);
+String _fixFolder(String path, String folder) {
+  if (isAbsolute(folder)) {
+    return folder;
+  }
+  return join(path, folder);
+}
+
+/// Deploy from deploy/firebase/hosting
+Future firebaseWebAppDeploy(String path, FirebaseDeployOptions options,
+    {String? deployDir}) async {
+  deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
   var projectId = options.projectId;
   var target = options.target;
@@ -43,7 +52,7 @@ Future firebaseWebAppDeploy(String path, FirebaseDeployOptions options) async {
 Future<void> firebaseWepAppBuildToDeploy(String path,
     {String? deployDir, String folder = 'web'}) async {
   var buildFolder = join(path, 'build', folder);
-  deployDir ??= join(path, 'deploy', folder);
+  deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
   var deployFile = File(join(buildFolder, 'deploy.yaml'));
   if (!await deployFile.exists()) {

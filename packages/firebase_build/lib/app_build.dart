@@ -15,9 +15,11 @@ Future<void> flutterWebAppClean(String directory) async {
 }
 
 /// Build a web app
-Future<void> flutterWebAppBuildAndDeployFirebaseDev(String directory,
-    {required FirebaseDeployOptions firebaseDeployOptions}) async {
+Future<void> flutterWebAppBuildAndDeploy(String directory,
+    {required FirebaseDeployOptions firebaseDeployOptions,
+    String? deployDir}) async {
   await flutterWebAppBuild(directory);
-  await firebaseWepAppBuildToDeploy(directory);
-  await firebaseWebAppDeploy(directory, firebaseDeployOptions);
+  await firebaseWepAppBuildToDeploy(directory, deployDir: deployDir);
+  await firebaseWebAppDeploy(directory, firebaseDeployOptions,
+      deployDir: deployDir);
 }
