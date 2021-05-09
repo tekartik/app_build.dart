@@ -3,6 +3,5 @@ export 'src/firebase_deploy.dart'
         FirebaseDeployOptions,
         firebaseWepAppBuildToDeploy,
         firebaseDefaultDeployDir,
-        firebaseWebAppDeploy;
-
-// TODO: Export any libraries intended for clients of this package.
+        firebaseWebAppDeploy,
+        firebaseWebAppServe;
