@@ -61,7 +61,7 @@ Future _firebaseWebAppPrepareHosting(String path, FirebaseDeployOptions options,
 }
 
 /// Copy to deploy using deploy.yaml
-Future<void> firebaseWepAppBuildToDeploy(String path,
+Future<void> firebaseWebAppBuildToDeploy(String path,
     {String? deployDir, String folder = 'web'}) async {
   var buildFolder = join(path, 'build', folder);
   deployDir =
@@ -77,6 +77,9 @@ Future<void> firebaseWepAppBuildToDeploy(String path,
       src: Directory(buildFolder),
       dst: Directory(deployDir));
 }
+
+@Deprecated('Typo error - Use firebaseWebAppBuildToDeploy')
+var firebaseWepAppBuildToDeploy = firebaseWebAppBuildToDeploy;
 
 /// Deploy from deploy/firebase/hosting
 Future firebaseWebAppServe(String path, FirebaseDeployOptions options,

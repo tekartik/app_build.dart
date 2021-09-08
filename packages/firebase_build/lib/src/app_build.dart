@@ -21,7 +21,7 @@ Future<void> flutterWebAppBuildAndDeploy(String directory,
     {required FirebaseDeployOptions firebaseDeployOptions,
     String? deployDir}) async {
   await flutterWebAppBuild(directory);
-  await firebaseWepAppBuildToDeploy(directory, deployDir: deployDir);
+  await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
   await firebaseWebAppDeploy(directory, firebaseDeployOptions,
       deployDir: deployDir);
 }
@@ -33,7 +33,7 @@ Future<void> flutterWebAppBuildAndServe(String directory,
     {required FirebaseDeployOptions firebaseDeployOptions,
     String? deployDir}) async {
   await flutterWebAppBuild(directory);
-  await firebaseWepAppBuildToDeploy(directory, deployDir: deployDir);
+  await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
   await firebaseWebAppServe(directory, firebaseDeployOptions,
       deployDir: deployDir);
 }
