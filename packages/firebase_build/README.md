@@ -1,10 +1,11 @@
-# app_build.dart
+# tekartik_firebase_build.dart
 
-Helpers for build and deployment
+Firebase build helper
 
 ## Setup
 
 ```yaml
+dependencies:
   tekartik_firebase_build:
     git:
       url: https://github.com/tekartik/app_build.dart
