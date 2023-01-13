@@ -68,6 +68,7 @@ Future<void> firebaseWebAppBuildToDeploy(String path,
       join(_fixFolder(path, deployDir ?? firebaseDefaultHostingDir), 'public');
 
   var deployFile = File(join(buildFolder, 'deploy.yaml'));
+  // ignore: avoid_slow_async_io
   if (!await deployFile.exists()) {
     throw StateError('Missing deploy.yaml file ($deployFile)');
   }
