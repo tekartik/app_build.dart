@@ -37,3 +37,45 @@ Future<void> flutterWebAppBuildAndServe(String directory,
   await firebaseWebAppServe(directory, firebaseDeployOptions,
       deployDir: deployDir);
 }
+
+/// Web app options
+class FlutterFirebaseWebAppOptions {
+  final String path;
+  final FirebaseDeployOptions deployOptions;
+
+  FlutterFirebaseWebAppOptions({this.path = '.', required this.deployOptions});
+}
+
+/// Convenient builder.
+class FlutterFirebaseWebAppBuilder {
+  final FlutterFirebaseWebAppOptions options;
+
+  FlutterFirebaseWebAppBuilder({required this.options});
+
+  Future<void> build() async {
+    await flutterWebAppBuild(options.path);
+    await firebaseWebAppBuildToDeploy(options.path);
+  }
+
+  Future<void> clean() async {
+    await flutterWebAppClean(options.path);
+  }
+
+  Future<void> serve() async {
+    await firebaseWebAppServe(options.path, options.deployOptions);
+  }
+
+  Future<void> deploy() async {
+    await firebaseWebAppDeploy(options.path, options.deployOptions);
+  }
+
+  Future<void> buildAndServe() async {
+    await build();
+    await serve();
+  }
+
+  Future<void> buildAndDeploy() async {
+    await build();
+    await deploy();
+  }
+}
