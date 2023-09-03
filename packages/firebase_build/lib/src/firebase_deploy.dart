@@ -22,6 +22,19 @@ class FirebaseDeployOptions {
     required this.hostingId,
     required this.target,
   });
+
+  /// Copy with new values.
+  FirebaseDeployOptions copyWith({
+    String? projectId,
+    String? hostingId,
+    String? target,
+  }) {
+    return FirebaseDeployOptions(
+      projectId: projectId ?? this.projectId,
+      hostingId: hostingId ?? this.hostingId,
+      target: target ?? this.target,
+    );
+  }
 }
 
 String _fixFolder(String path, String folder) {

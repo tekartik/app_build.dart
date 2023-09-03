@@ -38,12 +38,31 @@ Future<void> flutterWebAppBuildAndServe(String directory,
       deployDir: deployDir);
 }
 
+enum FlutterWebRenderer { html, canvasKit }
+
+class FlutterWebAppBuildOptions {
+  FlutterWebRenderer? renderer;
+  FlutterWebAppBuildOptions({this.renderer});
+}
+
 /// Web app options
 class FlutterFirebaseWebAppOptions {
   final String path;
+  final FlutterWebAppBuildOptions? buildOptions;
   final FirebaseDeployOptions deployOptions;
 
-  FlutterFirebaseWebAppOptions({this.path = '.', required this.deployOptions});
+  FlutterFirebaseWebAppOptions(
+      {this.path = '.', required this.deployOptions, this.buildOptions});
+
+  FlutterFirebaseWebAppOptions copyWith(
+      {String? path,
+      FlutterWebAppBuildOptions? buildOptions,
+      FirebaseDeployOptions? deployOptions}) {
+    return FlutterFirebaseWebAppOptions(
+        path: path ?? this.path,
+        buildOptions: buildOptions ?? this.buildOptions,
+        deployOptions: deployOptions ?? this.deployOptions);
+  }
 }
 
 /// Convenient builder.
@@ -53,6 +72,18 @@ class FlutterFirebaseWebAppBuilder {
   FlutterFirebaseWebAppBuilder({required this.options});
 
   Future<void> build() async {
+    var shell = Shell().cd(options.path);
+    var renderOptions = '';
+    switch (options.buildOptions?.renderer) {
+      case FlutterWebRenderer.html:
+        renderOptions = ' --web-renderer html';
+        break;
+      case FlutterWebRenderer.canvasKit:
+        renderOptions = ' --web-renderer canvaskit';
+        break;
+      default:
+    }
+    await shell.run('flutter build web$renderOptions');
     await flutterWebAppBuild(options.path);
     await firebaseWebAppBuildToDeploy(options.path);
   }
