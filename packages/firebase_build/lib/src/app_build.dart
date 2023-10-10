@@ -1,3 +1,4 @@
+import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 
 import 'firebase_deploy.dart';
@@ -42,17 +43,24 @@ enum FlutterWebRenderer { html, canvasKit }
 
 class FlutterWebAppBuildOptions {
   FlutterWebRenderer? renderer;
+
   FlutterWebAppBuildOptions({this.renderer});
 }
 
 /// Web app options
 class FlutterFirebaseWebAppOptions {
-  final String path;
+  late final String path;
   final FlutterWebAppBuildOptions? buildOptions;
   final FirebaseDeployOptions deployOptions;
 
   FlutterFirebaseWebAppOptions(
-      {this.path = '.', required this.deployOptions, this.buildOptions});
+      {
+      /// default to current directory
+      String? path,
+      required this.deployOptions,
+      this.buildOptions}) {
+    this.path = normalize(absolute(path ?? '.'));
+  }
 
   FlutterFirebaseWebAppOptions copyWith(
       {String? path,
@@ -71,6 +79,7 @@ class FlutterFirebaseWebAppBuilder {
 
   /// Project path.
   String get path => options.path;
+
   FlutterFirebaseWebAppBuilder({required this.options});
 
   String get target => options.deployOptions.target;
