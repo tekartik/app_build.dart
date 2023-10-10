@@ -69,10 +69,15 @@ class FlutterFirebaseWebAppOptions {
 class FlutterFirebaseWebAppBuilder {
   final FlutterFirebaseWebAppOptions options;
 
+  /// Project path.
+  String get path => options.path;
   FlutterFirebaseWebAppBuilder({required this.options});
 
-  Future<void> build() async {
+  String get target => options.deployOptions.target;
+
+  Future<void> build({FirebaseWebAppActionController? controller}) async {
     var shell = Shell().cd(options.path);
+    controller?.shell = shell;
     var renderOptions = '';
     switch (options.buildOptions?.renderer) {
       case FlutterWebRenderer.html:
@@ -92,21 +97,25 @@ class FlutterFirebaseWebAppBuilder {
     await flutterWebAppClean(options.path);
   }
 
-  Future<void> serve() async {
-    await firebaseWebAppServe(options.path, options.deployOptions);
+  Future<void> serve({FirebaseWebAppActionController? controller}) async {
+    await firebaseWebAppServe(options.path, options.deployOptions,
+        controller: controller);
   }
 
-  Future<void> deploy() async {
-    await firebaseWebAppDeploy(options.path, options.deployOptions);
+  Future<void> deploy({FirebaseWebAppActionController? controller}) async {
+    await firebaseWebAppDeploy(options.path, options.deployOptions,
+        controller: controller);
   }
 
-  Future<void> buildAndServe() async {
-    await build();
-    await serve();
+  Future<void> buildAndServe(
+      {FirebaseWebAppActionController? controller}) async {
+    await build(controller: controller);
+    await serve(controller: controller);
   }
 
-  Future<void> buildAndDeploy() async {
-    await build();
-    await deploy();
+  Future<void> buildAndDeploy(
+      {FirebaseWebAppActionController? controller}) async {
+    await build(controller: controller);
+    await deploy(controller: controller);
   }
 }

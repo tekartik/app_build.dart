@@ -46,13 +46,14 @@ String _fixFolder(String path, String folder) {
 
 /// Deploy from deploy/firebase/hosting
 Future firebaseWebAppDeploy(String path, FirebaseDeployOptions options,
-    {String? deployDir}) async {
+    {String? deployDir, FirebaseWebAppActionController? controller}) async {
   deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
   var projectId = options.projectId;
   var target = options.target;
 
   var shell = Shell().pushd(deployDir);
+  controller?.shell = shell;
 
   await _firebaseWebAppPrepareHosting(path, options, deployDir: deployDir);
   await shell
@@ -96,8 +97,8 @@ Future<void> firebaseWebAppBuildToDeploy(String path,
 var firebaseWepAppBuildToDeploy = firebaseWebAppBuildToDeploy;
 
 /// Deploy from deploy/firebase/hosting
-Future firebaseWebAppServe(String path, FirebaseDeployOptions options,
-    {String? deployDir}) async {
+Future<void> firebaseWebAppServe(String path, FirebaseDeployOptions options,
+    {String? deployDir, FirebaseWebAppActionController? controller}) async {
   deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
   var projectId = options.projectId;
@@ -105,7 +106,22 @@ Future firebaseWebAppServe(String path, FirebaseDeployOptions options,
   var target = options.target;
 
   var shell = Shell().pushd(deployDir);
+  controller?._shell = shell;
   await _firebaseWebAppPrepareHosting(path, options, deployDir: deployDir);
   await shell.run(
       'firebase emulators:start --project $projectId  --only hosting:$target');
+}
+
+class FirebaseWebAppActionController {
+  Shell? _shell;
+  void cancel() {
+    _shell?.kill();
+  }
+}
+
+extension FirebaseWebAppActionControllerPrvExt
+    on FirebaseWebAppActionController {
+  set shell(Shell shell) {
+    _shell = shell;
+  }
 }

@@ -5,4 +5,5 @@ export 'src/firebase_deploy.dart'
         firebaseWebAppBuildToDeploy,
         firebaseDefaultDeployDir,
         firebaseWebAppDeploy,
-        firebaseWebAppServe;
+        firebaseWebAppServe,
+        FirebaseWebAppActionController;
