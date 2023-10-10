@@ -15,33 +15,38 @@ void menuFirebaseWebAppBuilderContent(
     write('ProjectId: ${builder.options.deployOptions.projectId}');
     write('Hosting: ${builder.options.deployOptions.hostingId}');
   });
-  var serveController = FirebaseWebAppActionController();
+  var actionController = FirebaseWebAppActionController();
 
   void cancel() {
-    serveController.cancel();
+    actionController.cancel();
   }
 
   item('cancel build/serve/deploy', () async {
     cancel();
   });
 
+  item('build and deploy', () async {
+    cancel();
+    await builder.buildAndDeploy(controller: actionController);
+  });
+
   item('build', () async {
     cancel();
-    await builder.build(controller: serveController);
+    await builder.build(controller: actionController);
   });
 
   item('serve', () async {
     cancel();
-    await builder.serve(controller: serveController);
+    await builder.serve(controller: actionController);
+  });
+  item('deploy', () async {
+    cancel();
+    await builder.deploy(controller: actionController);
   });
 
-  item('build and deploy', () async {
-    cancel();
-    await builder.buildAndDeploy(controller: serveController);
-  });
   item('build and serve', () async {
     cancel();
-    await builder.buildAndServe(controller: serveController);
+    await builder.buildAndServe(controller: actionController);
   });
   item('clean', () async {
     cancel();
@@ -56,4 +61,38 @@ void menuFirebaseAppContent(
       menuFirebaseWebAppBuilderContent(builder: builder);
     });
   }
+  menu('all', () {
+    var actionController = FirebaseWebAppActionController();
+
+    void cancel() {
+      actionController.cancel();
+    }
+
+    item('build', () async {
+      cancel();
+      for (var builder in builders) {
+        await builder.build(controller: actionController);
+      }
+    });
+
+    item('build and deploy', () async {
+      cancel();
+      for (var builder in builders) {
+        await builder.buildAndDeploy(controller: actionController);
+      }
+    });
+    item('deploy', () async {
+      cancel();
+      for (var builder in builders) {
+        await builder.deploy(controller: actionController);
+      }
+    });
+
+    item('clean', () async {
+      cancel();
+      for (var builder in builders) {
+        await builder.clean();
+      }
+    });
+  });
 }
