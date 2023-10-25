@@ -4,9 +4,15 @@ version: 0.2.0
 publish_to: none
 
 environment:
-  sdk: '>=3.0.0 <4.0.0'
+  sdk: '>=3.1.4 <4.0.0'
 
 dev_dependencies:
+  tekartik_lints:
+    git:
+      url: https://github.com/tekartik/common.dart
+      ref: dart3a
+      path: packages/lints
+    version: '>=0.1.0'
   path:
   pub_semver:
   process_run: '>=0.10.3'
