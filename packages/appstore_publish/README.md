@@ -10,6 +10,6 @@ dependencies:
     git:
       url: https://github.com/tekartik/app_build.dart
       ref: dart3a
-      path: packages/ppstore_publish
+      path: packages/appstore_publish
     version: '>=0.1.0'
 ```

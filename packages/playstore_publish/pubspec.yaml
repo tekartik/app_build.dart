@@ -9,6 +9,7 @@ environment:
 # Add regular dependencies here.
 dependencies:
   path:
+  args:
   googleapis:
   googleapis_auth:
   tekartik_io_auth_utils:
