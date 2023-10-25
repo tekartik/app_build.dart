@@ -1,12 +1,12 @@
 library;
 
-export 'package:tekartik_android_utils/src/android_publisher.dart'
+export 'package:tekartik_playstore_publish/src/android_publisher.dart'
     show
         AndroidPublisher,
         AndroidPublisherAppEdit,
         initPublishApiClient,
         androidPublisherScopes;
-export 'package:tekartik_android_utils/src/publish_impl.dart'
+export 'package:tekartik_playstore_publish/src/publish_impl.dart'
     show
         LocalAab,
         UploadOptions,
