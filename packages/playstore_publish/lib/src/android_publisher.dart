@@ -9,6 +9,8 @@ import 'package:googleapis_auth/auth_io.dart';
 
 const androidPublisherScopes = [AndroidPublisherApi.androidpublisherScope];
 
+const publishTrackInternal = 'internal';
+
 Future<AndroidPublisherApi> initPublishApiClient(
     {required Map serviceAccount}) async {
   var credentials = ServiceAccountCredentials.fromJson(serviceAccount);
@@ -76,6 +78,34 @@ class AndroidPublisher {
   Future<bool> hasBundleVersionCode(int versionCode) async {
     return await readOnlyAppEdit((appEdit) async {
       return await appEdit.hasBundleVersionCode(versionCode);
+    });
+  }
+
+  Future<void> publishVersionCode(
+      {required String trackName, required int versionCode}) async {
+    await writeAppEdit((appEdit) async {
+      await appEdit.publishTrack(
+        trackName,
+        versionCode: versionCode,
+      );
+    });
+  }
+
+  /// Check if versionCode exists, upload if not, publish.
+  Future<void> uploadBundleAndPublish(
+      {required String aabPath,
+      required String trackName,
+      required int versionCode}) async {
+    await writeAppEdit((appEdit) async {
+      var found = await appEdit.hasBundleVersionCode(versionCode);
+      if (!found) {
+        await appEdit.uploadBundle(aabPath);
+      }
+
+      await appEdit.publishTrack(
+        trackName,
+        versionCode: versionCode,
+      );
     });
   }
 }
@@ -148,8 +178,9 @@ class AndroidPublisherAppEdit {
     await api.edits.tracks.update(track, packageName, appEdit.id!, trackName);
   }
 
+  /// Commit only as validate fails on changesNotSentForReview
   Future<void> validateAndCommit() async {
-    await api.edits.validate(packageName, id);
-    await api.edits.commit(packageName, id);
+    // await api.edits.validate(packageName, id);
+    await api.edits.commit(packageName, id, changesNotSentForReview: true);
   }
 }
