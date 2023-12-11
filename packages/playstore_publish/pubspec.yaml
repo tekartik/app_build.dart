@@ -10,7 +10,7 @@ environment:
 dependencies:
   path:
   args:
-  googleapis:
+  googleapis: '>=12.0.0'
   googleapis_auth:
   tekartik_io_auth_utils:
     git:
