@@ -45,11 +45,13 @@ class AndroidPublisher {
   }
 
   Future<T> writeAppEdit<T>(
-      Future<T> Function(AndroidPublisherAppEdit appEdit) action) async {
+      Future<T> Function(AndroidPublisherAppEdit appEdit) action,
+      {bool? changesNotSentForReview}) async {
     var apAppEdit = await newAppEdit();
     try {
       var result = await action(apAppEdit);
-      await apAppEdit.validateAndCommit();
+      await apAppEdit.validateAndCommit(
+          changesNotSentForReview: changesNotSentForReview);
       return result;
     } catch (e) {
       await apAppEdit.delete();
@@ -95,7 +97,8 @@ class AndroidPublisher {
   Future<void> uploadBundleAndPublish(
       {required String aabPath,
       required String trackName,
-      required int versionCode}) async {
+      required int versionCode,
+      bool? changesNotSentForReview}) async {
     await writeAppEdit((appEdit) async {
       var found = await appEdit.hasBundleVersionCode(versionCode);
       if (!found) {
@@ -106,7 +109,7 @@ class AndroidPublisher {
         trackName,
         versionCode: versionCode,
       );
-    });
+    }, changesNotSentForReview: changesNotSentForReview);
   }
 }
 
@@ -179,8 +182,11 @@ class AndroidPublisherAppEdit {
   }
 
   /// Commit only as validate fails on changesNotSentForReview
-  Future<void> validateAndCommit() async {
-    // await api.edits.validate(packageName, id);
-    await api.edits.commit(packageName, id, changesNotSentForReview: true);
+  Future<void> validateAndCommit({bool? changesNotSentForReview}) async {
+    if (changesNotSentForReview != true) {
+      await api.edits.validate(packageName, id);
+    }
+    await api.edits.commit(packageName, id,
+        changesNotSentForReview: changesNotSentForReview);
   }
 }
