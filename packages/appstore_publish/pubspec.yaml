@@ -1,6 +1,6 @@
 name: tekartik_appstore_publish
-description: A sample command-line application.
-version: 0.1.0
+description: IOS appstore publish
+version: 0.1.1
 publish_to: none
 
 environment:
@@ -8,7 +8,7 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  # path: ^1.8.0
+  process_run:
 
 dev_dependencies:
   lints: '>=2.0.0'
