@@ -7,10 +7,10 @@ environment:
   sdk: '>=3.1.4 <4.0.0'
 
 dependencies:
-  path:
-  dev_build:
-  process_run:
-  args:
+  path: '>=1.6.0'
+  dev_build: '>=0.1.0'
+  process_run: '>=0.10.2'
+  args: '>=2.4.2'
   tekartik_firebase_build:
     git:
       url: https://github.com/tekartik/app_build.dart

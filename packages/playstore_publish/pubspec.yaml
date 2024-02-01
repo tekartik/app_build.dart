@@ -8,10 +8,10 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
-  path:
-  args:
+  path: '>=1.6.0'
+  args: '>=2.4.2'
   googleapis: '>=12.0.0'
-  googleapis_auth:
+  googleapis_auth: '>=1.4.1'
   tekartik_io_auth_utils:
     git:
       url: https://github.com/tekartik/io_auth_utils.dart
