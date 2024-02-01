@@ -8,8 +8,8 @@ environment:
 
 dependencies:
   path: '>=1.7.0'
-  process_run:
-  dev_build:
+  process_run: '>=0.10.2'
+  dev_build: '>=0.1.0'
   tekartik_deploy:
     git:
       url: https://github.com/tekartik/deploy.dart
