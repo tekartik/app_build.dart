@@ -9,8 +9,6 @@ import 'package:googleapis_auth/auth_io.dart';
 
 const androidPublisherScopes = [AndroidPublisherApi.androidpublisherScope];
 
-const publishTrackInternal = 'internal';
-
 Future<AndroidPublisherApi> initPublishApiClient(
     {required Map serviceAccount}) async {
   var credentials = ServiceAccountCredentials.fromJson(serviceAccount);
