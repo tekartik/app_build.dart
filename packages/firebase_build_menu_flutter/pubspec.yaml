@@ -1,10 +1,10 @@
 name: tekartik_firebase_build_menu_flutter
 description: Build menu flutter
-version: 0.3.4
+version: 0.3.5
 publish_to: none
 
 environment:
-  sdk: '>=3.1.4 <4.0.0'
+  sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
   path: '>=1.6.0'
