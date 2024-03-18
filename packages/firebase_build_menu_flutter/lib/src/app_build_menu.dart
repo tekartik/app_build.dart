@@ -1,9 +1,9 @@
+import 'package:dev_build/menu/menu.dart';
 import 'package:path/path.dart';
 // ignore: depend_on_referenced_packages
 // ignore: depend_on_referenced_packages
 import 'package:tekartik_firebase_build/app_build.dart';
 import 'package:tekartik_firebase_build/firebase_deploy.dart';
-import 'package:tekartik_test_menu_io/test_menu_io.dart';
 
 void menuFirebaseWebAppBuilderContent(
     {required FlutterFirebaseWebAppBuilder builder}) {
