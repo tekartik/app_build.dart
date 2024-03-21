@@ -14,7 +14,8 @@ export 'package:dev_build/menu/menu.dart'
         solo_menu,
         // ignore: deprecated_member_use
         devWrite;
-export 'package:dev_build/menu/menu_io.dart' show mainMenu, initMenuConsole;
+export 'package:dev_build/menu/menu_io.dart'
+    show mainMenuConsole, initMenuConsole;
 export 'package:tekartik_firebase_build/app_build.dart';
 export 'package:tekartik_firebase_build/firebase_deploy.dart';
 
