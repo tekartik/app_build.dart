@@ -50,6 +50,7 @@ class FlutterWebAppBuildOptions {
 /// Web app options
 class FlutterFirebaseWebAppOptions {
   late final String path;
+  final String? deployDir;
   final FlutterWebAppBuildOptions? buildOptions;
   final FirebaseDeployOptions deployOptions;
 
@@ -57,6 +58,7 @@ class FlutterFirebaseWebAppOptions {
       {
       /// default to current directory
       String? path,
+      this.deployDir,
       required this.deployOptions,
       this.buildOptions}) {
     this.path = normalize(absolute(path ?? '.'));
@@ -64,10 +66,12 @@ class FlutterFirebaseWebAppOptions {
 
   FlutterFirebaseWebAppOptions copyWith(
       {String? path,
+      String? deployDir,
       FlutterWebAppBuildOptions? buildOptions,
       FirebaseDeployOptions? deployOptions}) {
     return FlutterFirebaseWebAppOptions(
         path: path ?? this.path,
+        deployDir: deployDir ?? this.deployDir,
         buildOptions: buildOptions ?? this.buildOptions,
         deployOptions: deployOptions ?? this.deployOptions);
   }
@@ -99,7 +103,8 @@ class FlutterFirebaseWebAppBuilder {
     }
     await shell.run('flutter build web$renderOptions');
     await flutterWebAppBuild(options.path);
-    await firebaseWebAppBuildToDeploy(options.path);
+    await firebaseWebAppBuildToDeploy(options.path,
+        deployDir: options.deployDir);
   }
 
   Future<void> clean() async {
@@ -108,11 +113,14 @@ class FlutterFirebaseWebAppBuilder {
 
   Future<void> serve({FirebaseWebAppActionController? controller}) async {
     await firebaseWebAppServe(options.path, options.deployOptions,
-        controller: controller);
+        deployDir: options.deployDir, controller: controller);
   }
 
   Future<void> deploy({FirebaseWebAppActionController? controller}) async {
-    await firebaseWebAppDeploy(options.path, options.deployOptions,
+    await firebaseWebAppDeploy(
+        options.path,
+        deployDir: options.deployDir,
+        options.deployOptions,
         controller: controller);
   }
 
