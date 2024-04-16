@@ -1,12 +1,14 @@
 name: tekartik_firebase_build
 description: Firebase build and deploy helpers
-version: 0.1.2
+version: 0.2.0
 publish_to: none
 
 environment:
   sdk: '>=3.3.0 <4.0.0'
 
 dependencies:
+  googleapis: '>=12.0.0'
+  googleapis_auth: '>=1.4.1'
   path: '>=1.7.0'
   process_run: '>=0.10.2'
   dev_build: '>=0.1.0'

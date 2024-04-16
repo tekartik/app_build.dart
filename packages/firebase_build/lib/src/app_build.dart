@@ -98,7 +98,6 @@ class FlutterFirebaseWebAppBuilder {
       default:
     }
     await shell.run('flutter build web$renderOptions');
-    await flutterWebAppBuild(options.path);
     await firebaseWebAppBuildToDeploy(options.path);
   }
 
