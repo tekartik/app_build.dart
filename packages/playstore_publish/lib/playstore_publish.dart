@@ -14,4 +14,11 @@ export 'package:tekartik_playstore_publish/src/publish_impl.dart'
         manageBundle,
         uploadBundle,
         publishBundle,
-        internalTrack;
+        internalTrack,
+        publishTrackAlpha,
+        publishTrackBeta,
+        publishTrackInternal,
+        publishTrackProduction,
+        publishTrackWearBeta,
+        publishTrackWearInternal,
+        publishTrackWearProduction;

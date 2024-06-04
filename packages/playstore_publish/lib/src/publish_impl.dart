@@ -66,8 +66,19 @@ class PublishOptions {
 
 final _noPublishOptions = PublishOptions(track: _noTrack);
 final _noUploadOptions = UploadOptions(upload: false);
-const internalTrack = 'internal';
 
+const internalTrack = publishTrackInternal;
+
+/// Common track
+const publishTrackInternal = 'internal';
+
+const publishTrackProduction = 'production';
+const publishTrackBeta = 'beta';
+const publishTrackAlpha = 'alpha';
+
+const publishTrackWearBeta = 'wear:beta';
+const publishTrackWearInternal = 'wear:internal';
+const publishTrackWearProduction = 'wear:production';
 Future manageBundle(LocalAab localAab,
     {String? serviceAccountPath,
     UploadOptions? uploadOptions,
