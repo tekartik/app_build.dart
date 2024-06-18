@@ -41,10 +41,16 @@ Future<void> flutterWebAppBuildAndServe(String directory,
 
 enum FlutterWebRenderer { html, canvasKit }
 
+/// Build options.
 class FlutterWebAppBuildOptions {
+  /// Renderer
   FlutterWebRenderer? renderer;
 
-  FlutterWebAppBuildOptions({this.renderer});
+  /// Compile as wasm
+  bool? wasm;
+
+  /// Build options.
+  FlutterWebAppBuildOptions({this.renderer, this.wasm});
 }
 
 /// Web app options
@@ -88,16 +94,21 @@ class FlutterFirebaseWebAppBuilder {
     var shell = Shell().cd(options.path);
     controller?.shell = shell;
     var renderOptions = '';
-    switch (options.buildOptions?.renderer) {
-      case FlutterWebRenderer.html:
-        renderOptions = ' --web-renderer html';
-        break;
-      case FlutterWebRenderer.canvasKit:
-        renderOptions = ' --web-renderer canvaskit';
-        break;
-      default:
+    var wasm = options.buildOptions?.wasm ?? false;
+    if (!wasm) {
+      // not compatible with wasm
+      switch (options.buildOptions?.renderer) {
+        case FlutterWebRenderer.html:
+          renderOptions = ' --web-renderer html';
+          break;
+        case FlutterWebRenderer.canvasKit:
+          renderOptions = ' --web-renderer canvaskit';
+          break;
+        default:
+      }
     }
-    await shell.run('flutter build web$renderOptions');
+    var wasmOptions = wasm ? ' --wasm' : '';
+    await shell.run('flutter build web$renderOptions$wasmOptions');
     await firebaseWebAppBuildToDeploy(options.path);
   }
 
