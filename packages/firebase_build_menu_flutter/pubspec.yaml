@@ -54,5 +54,7 @@ dev_dependencies:
 dependency_overrides:
   tekartik_firebase_build:
     path: ../firebase_build
+  tekartik_web_publish:
+    path: ../web_publish
 executables:
   fbm: fbm

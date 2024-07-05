@@ -20,5 +20,14 @@ dependencies:
       url: https://github.com/tekartik/android_utils.dart
       ref: dart3a
     version: '>=0.6.1'
+  tekartik_web_publish:
+    git:
+      url: https://github.com/tekartik/app_build.dart
+      ref: dart3a
+      path: packages/web_publish
 dev_dependencies:
   test: '>=1.14.4'
+
+dependency_overrides:
+  tekartik_web_publish:
+    path: ../web_publish

@@ -3,12 +3,13 @@ import 'dart:io';
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
+import 'package:tekartik_web_publish/web_publish.dart';
 
 var firebaseDefaultWebDeployDir = join(firebaseDefaultHostingDir, 'public');
 var firebaseDefaultDeployDir = firebaseDefaultWebDeployDir;
 var firebaseDefaultHostingDir = join('deploy', 'firebase', 'hosting');
 
-class FirebaseDeployOptions {
+class FirebaseDeployOptions implements WebAppDeployOptions {
   String projectId;
 
   /// Billable firebase project

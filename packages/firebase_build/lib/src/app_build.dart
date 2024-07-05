@@ -41,10 +41,16 @@ Future<void> flutterWebAppBuildAndServe(String directory,
 
 enum FlutterWebRenderer { html, canvasKit }
 
+/// Build options.
 class FlutterWebAppBuildOptions {
+  /// Renderer
   FlutterWebRenderer? renderer;
 
-  FlutterWebAppBuildOptions({this.renderer});
+  /// Compile as wasm
+  bool? wasm;
+
+  /// Build options.
+  FlutterWebAppBuildOptions({this.renderer, this.wasm});
 }
 
 /// Web app options
@@ -92,17 +98,21 @@ class FlutterFirebaseWebAppBuilder {
     var shell = Shell().cd(options.path);
     controller?.shell = shell;
     var renderOptions = '';
-    switch (options.buildOptions?.renderer) {
-      case FlutterWebRenderer.html:
-        renderOptions = ' --web-renderer html';
-        break;
-      case FlutterWebRenderer.canvasKit:
-        renderOptions = ' --web-renderer canvaskit';
-        break;
-      default:
+    var wasm = options.buildOptions?.wasm ?? false;
+    if (!wasm) {
+      // not compatible with wasm
+      switch (options.buildOptions?.renderer) {
+        case FlutterWebRenderer.html:
+          renderOptions = ' --web-renderer html';
+          break;
+        case FlutterWebRenderer.canvasKit:
+          renderOptions = ' --web-renderer canvaskit';
+          break;
+        default:
+      }
     }
-    await shell.run('flutter build web$renderOptions');
-    await flutterWebAppBuild(options.path);
+    var wasmOptions = wasm ? ' --wasm' : '';
+    await shell.run('flutter build web$renderOptions$wasmOptions');
     await firebaseWebAppBuildToDeploy(options.path,
         deployDir: options.deployDir);
   }
@@ -113,15 +123,12 @@ class FlutterFirebaseWebAppBuilder {
 
   Future<void> serve({FirebaseWebAppActionController? controller}) async {
     await firebaseWebAppServe(options.path, options.deployOptions,
-        deployDir: options.deployDir, controller: controller);
+        controller: controller);
   }
 
   Future<void> deploy({FirebaseWebAppActionController? controller}) async {
-    await firebaseWebAppDeploy(
-        options.path,
-        deployDir: options.deployDir,
-        options.deployOptions,
-        controller: controller);
+    await firebaseWebAppDeploy(options.path, options.deployOptions,
+        deployDir: options.deployDir, controller: controller);
   }
 
   Future<void> buildAndServe(
