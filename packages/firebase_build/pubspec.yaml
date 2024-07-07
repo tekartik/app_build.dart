@@ -1,6 +1,6 @@
 name: tekartik_firebase_build
 description: Firebase build and deploy helpers
-version: 0.1.2
+version: 0.2.0
 publish_to: none
 
 environment:
