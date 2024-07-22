@@ -4,19 +4,24 @@ import 'package:process_run/shell.dart';
 import 'package:tekartik_web_publish/src/deploy_common.dart';
 
 /// Surge deployer
-class SurgeWebAppDeployer {
+class SurgeWebAppDeployer implements WebAppDeployer {
   /// The deploy path
-  final String path;
+  final String? path;
 
   /// The deploy options.
   final SurgeWebAppDeployOptions options;
 
   /// Constructor.
-  SurgeWebAppDeployer({required this.path, required this.options});
+  SurgeWebAppDeployer({this.path, required this.options});
 
   /// Deploy.
-  Future<void> deploy() async {
-    await Shell().cd(path).run('surge . --domain ${options.domain}');
+  @override
+  Future<void> deploy({String? path}) async {
+    var deployPath = this.path ?? path;
+    if (deployPath == null) {
+      throw StateError('Missing deploy path');
+    }
+    await Shell().cd(deployPath).run('surge . --domain ${options.domain}');
     stdout.writeln('Deployed to https://${options.domain}');
   }
 }

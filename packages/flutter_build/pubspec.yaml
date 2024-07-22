@@ -1,5 +1,5 @@
-name: tekartik_firebase_build
-description: Firebase build and deploy helpers
+name: tekartik_flutter_build
+description: Flutter build and deploy helpers
 version: 0.2.0
 publish_to: none
 
@@ -10,11 +10,6 @@ dependencies:
   path: '>=1.7.0'
   process_run: '>=0.10.2'
   dev_build: '>=0.1.0'
-  tekartik_flutter_build:
-    git:
-      url: https://github.com/tekartik/app_build.dart
-      ref: dart3a
-      path: packages/flutter_build
   tekartik_deploy:
     git:
       url: https://github.com/tekartik/deploy.dart
@@ -36,5 +31,3 @@ dev_dependencies:
 dependency_overrides:
   tekartik_web_publish:
     path: ../web_publish
-  tekartik_flutter_build:
-    path: ../flutter_build

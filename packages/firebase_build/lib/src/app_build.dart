@@ -1,5 +1,6 @@
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
+import 'package:tekartik_flutter_build/app_build.dart';
 
 import 'firebase_deploy.dart';
 
@@ -7,12 +8,6 @@ import 'firebase_deploy.dart';
 Future<void> flutterWebAppBuild(String directory) async {
   var shell = Shell().cd(directory);
   await shell.run('flutter build web');
-}
-
-/// Clean a web app
-Future<void> flutterWebAppClean(String directory) async {
-  var shell = Shell().cd(directory);
-  await shell.run('flutter clean');
 }
 
 /// Build a web app and deploy
@@ -37,20 +32,6 @@ Future<void> flutterWebAppBuildAndServe(String directory,
   await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
   await firebaseWebAppServe(directory, firebaseDeployOptions,
       deployDir: deployDir);
-}
-
-enum FlutterWebRenderer { html, canvasKit }
-
-/// Build options.
-class FlutterWebAppBuildOptions {
-  /// Renderer
-  FlutterWebRenderer? renderer;
-
-  /// Compile as wasm
-  bool? wasm;
-
-  /// Build options.
-  FlutterWebAppBuildOptions({this.renderer, this.wasm});
 }
 
 /// Web app options
