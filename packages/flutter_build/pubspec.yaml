@@ -8,7 +8,7 @@ environment:
 
 dependencies:
   path: '>=1.7.0'
-  process_run: '>=0.10.2'
+  process_run: '>=1.0.0+1'
   dev_build: '>=0.1.0'
   tekartik_deploy:
     git:
