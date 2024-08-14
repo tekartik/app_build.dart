@@ -1,9 +1,10 @@
 import 'dart:io';
-
+import 'package:cv/cv.dart';
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
+import 'package:tekartik_common_utils/common_utils_import.dart';
 
 var firebaseDefaultWebDeployDir = join(firebaseDefaultHostingDir, 'public');
 var firebaseDefaultDeployDir = firebaseDefaultWebDeployDir;
@@ -57,10 +58,12 @@ Future firebaseWebAppDeploy(String path, FirebaseDeployOptions options,
   controller?.shell = shell;
 
   await _firebaseWebAppPrepareHosting(path, options, deployDir: deployDir);
+
   await shell
       .run('firebase --project $projectId deploy --only hosting:$target');
 }
 
+/// Configure hosting for target if needed
 Future _firebaseWebAppPrepareHosting(String path, FirebaseDeployOptions options,
     {String? deployDir}) async {
   deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
@@ -68,8 +71,20 @@ Future _firebaseWebAppPrepareHosting(String path, FirebaseDeployOptions options,
   var projectId = options.projectId;
   var target = options.target;
   var hostingId = options.hostingId;
-  var shell = Shell().pushd(deployDir);
 
+  try {
+    var firebaseRcMap = parseJsonObject(
+        File(join(deployDir, '.firebaserc')).readAsStringSync())!;
+    var existingHostingId = firebaseRcMap
+        .getKeyPathValue(['targets', projectId, 'hosting', target, 0]);
+    if (existingHostingId == hostingId) {
+      // Hosting id matches
+      return;
+    }
+  } catch (_) {}
+
+  // Configure hosting for target
+  var shell = Shell().pushd(deployDir);
   await shell.run('firebase --project $projectId target:clear hosting $target');
   await shell.run(
       'firebase --project $projectId target:apply hosting $target $hostingId');
