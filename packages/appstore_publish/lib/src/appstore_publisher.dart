@@ -12,6 +12,8 @@ class AppStorePublisher {
   final String path;
 
   late final _shell = Shell(workingDirectory: path);
+
+  /// Create a publisher
   AppStorePublisher(
       {required this.issuerId, required this.apiKey, required this.path});
 
@@ -21,6 +23,7 @@ class AppStorePublisher {
         'xcrun altool --validate-app -f ${shellArgument(ipaPath)} -t ios --apiKey $apiKey --apiIssuer $issuerId');
   }
 
+  /// Upload ios app to TestFlight.
   Future<void> uploadIosApp({required String ipaPath}) async {
     await _shell.run(
         'xcrun altool --upload-app -f ${shellArgument(ipaPath)} -t ios --apiKey $apiKey --apiIssuer $issuerId');

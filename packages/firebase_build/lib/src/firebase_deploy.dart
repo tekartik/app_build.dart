@@ -1,10 +1,11 @@
 import 'dart:io';
+
 import 'package:cv/cv.dart';
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
+import 'package:tekartik_common_utils/common_utils_import.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
-import 'package:tekartik_common_utils/common_utils_import.dart';
 
 var firebaseDefaultWebDeployDir = join(firebaseDefaultHostingDir, 'public');
 var firebaseDefaultDeployDir = firebaseDefaultWebDeployDir;
@@ -130,6 +131,7 @@ Future<void> firebaseWebAppServe(String path, FirebaseDeployOptions options,
 
 class FirebaseWebAppActionController {
   Shell? _shell;
+
   void cancel() {
     _shell?.kill();
   }

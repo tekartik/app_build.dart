@@ -31,6 +31,10 @@ dependencies:
       url: https://github.com/tekartik/app_build.dart
       ref: dart3a
       path: packages/web_publish
+  tekartik_common_utils:
+    git:
+      url: https://github.com/tekartik/common_utils.dart
+      ref: dart3a
 dev_dependencies:
   test: '>=1.14.4'
 
