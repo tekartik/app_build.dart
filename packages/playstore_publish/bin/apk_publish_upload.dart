@@ -2,13 +2,12 @@
 // Copyright (c) 2015, <your name>. All rights reserved. Use of this source code
 // is governed by a BSD-style license that can be found in the LICENSE file.
 
-import 'dart:io';
-
 import 'package:_discoveryapis_commons/_discoveryapis_commons.dart' // ignore: depend_on_referenced_packages
     as commons;
 import 'package:args/args.dart';
 import 'package:googleapis/androidpublisher/v3.dart';
 import 'package:googleapis/people/v1.dart';
+import 'package:process_run/stdio.dart';
 import 'package:tekartik_android_utils/apk_utils.dart';
 import 'package:tekartik_android_utils/src/import.dart';
 import 'package:tekartik_io_auth_utils/io_auth_utils.dart';
@@ -42,8 +41,8 @@ Future main(List<String> args) async {
     help = true;
   }
   void usage() {
-    print('apk_publish_upload <path_to_apk_file> --auth auth.json');
-    print(parser.usage);
+    stdout.writeln('apk_publish_upload <path_to_apk_file> --auth auth.json');
+    stdout.writeln(parser.usage);
   }
 
   if (help) {
@@ -57,13 +56,13 @@ Future main(List<String> args) async {
 
     if (File(authJsonFile!).existsSync()) {
       var authClientInfo = (await AuthClientInfo.load(filePath: authJsonFile))!;
-      print(authClientInfo);
+      stdout.writeln(authClientInfo);
       var authClient = await authClientInfo.getClient(scopes);
 
       try {
         var peopleApi = PeopleServiceApi(authClient);
         var person = await peopleApi.people.get('me');
-        print(person.toJson());
+        stdout.writeln(person.toJson());
       } catch (e) {
         stderr.writeln('PlusApi error $e');
       }
@@ -80,19 +79,19 @@ Future main(List<String> args) async {
       var appEdit = AppEdit();
       appEdit = await api.edits.insert(appEdit, packageName);
       try {
-        print(appEdit.toJson());
+        stdout.writeln(appEdit.toJson());
 
-        print('name : ${apkInfo.name}');
-        print('versionCode : ${apkInfo.versionCode}');
-        print('versionName : ${apkInfo.versionName}');
+        stdout.writeln('name : ${apkInfo.name}');
+        stdout.writeln('versionCode : ${apkInfo.versionCode}');
+        stdout.writeln('versionName : ${apkInfo.versionName}');
 
         var data = await File(apkFile).readAsBytes();
         var media = commons.Media(Stream.fromIterable([data]), data.length);
-        print('uploading ${data.length}...');
+        stdout.writeln('uploading ${data.length}...');
         var apk = await api.edits.apks
             .upload(packageName, appEdit.id!, uploadMedia: media);
-        print('uploaded');
-        print('versionCode: ${apk.versionCode}');
+        stdout.writeln('uploaded');
+        stdout.writeln('versionCode: ${apk.versionCode}');
 
         var track = Track();
         // track.track = trackName;
@@ -103,10 +102,10 @@ Future main(List<String> args) async {
         ]; // v2:versionCodes = [versionCode];
         track = await api.edits.tracks
             .update(track, packageName, appEdit.id!, alphaTrackName);
-        print('versionCodes: ${track.releases!.first.versionCodes}');
+        stdout.writeln('versionCodes: ${track.releases!.first.versionCodes}');
 
         await api.edits.commit(packageName, appEdit.id!);
-        print('commited');
+        stdout.writeln('commited');
       } catch (e) {
         try {
           await api.edits.delete(packageName, appEdit.id!);

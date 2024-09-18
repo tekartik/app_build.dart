@@ -1,2 +1,2 @@
 # tekartik analysis_options extension
-include: package:tekartik_lints/strict.yaml
+include: package:tekartik_lints/package.yaml

@@ -7,8 +7,30 @@ import 'package:googleapis/androidpublisher/v3.dart';
 import 'package:googleapis_auth/auth_io.dart';
 //import 'package:googleapis'
 
+/// Scopes for Android Publisher
 const androidPublisherScopes = [AndroidPublisherApi.androidpublisherScope];
 
+/// Android Publisher Client
+class AndroidPublisherClient {
+  final AndroidPublisherApi _api;
+
+  /// Constructor
+  AndroidPublisherClient({required AndroidPublisherApi api}) : _api = api;
+
+  /// Get publisher for a given package name
+  AndroidPublisher getPublisher(String packageName) {
+    return AndroidPublisher(packageName: packageName, api: _api);
+  }
+}
+
+/// Prefer
+Future<AndroidPublisherClient> initAndroidPublisherClient(
+    {required Map serviceAccount}) async {
+  var api = await initPublishApiClient(serviceAccount: serviceAccount);
+  return AndroidPublisherClient(api: api);
+}
+
+/// Initialize the Android Publisher API, prefer [initAndroidPublisherClient]
 Future<AndroidPublisherApi> initPublishApiClient(
     {required Map serviceAccount}) async {
   var credentials = ServiceAccountCredentials.fromJson(serviceAccount);
@@ -18,19 +40,34 @@ Future<AndroidPublisherApi> initPublishApiClient(
   return publish;
 }
 
+/// Android Publisher
 class AndroidPublisher {
+  /// Package name
   final String packageName;
-  final AndroidPublisherApi api;
 
-  AndroidPublisher({required this.packageName, required this.api});
+  /// API
+  final AndroidPublisherApi _api;
+
+  @Deprecated('Do no use')
+
+  /// Internal api
+  AndroidPublisherApi get api => _api;
+
+  /// Either api or client must be provided
+  AndroidPublisher(
+      {required this.packageName,
+      AndroidPublisherApi? api,
+      AndroidPublisherClient? client})
+      : _api = api ?? client!._api;
 
   /// New edit, delete on error
   Future<AndroidPublisherAppEdit> newAppEdit() async {
     var appEdit = AppEdit();
-    appEdit = await api.edits.insert(appEdit, packageName);
+    appEdit = await _api.edits.insert(appEdit, packageName);
     return AndroidPublisherAppEdit(appEdit: appEdit, publisher: this);
   }
 
+  /// Read only app edit
   Future<T> readOnlyAppEdit<T>(
       Future<T> Function(AndroidPublisherAppEdit appEdit) action) async {
     var apAppEdit = await newAppEdit();
@@ -42,6 +79,7 @@ class AndroidPublisher {
     }
   }
 
+  /// Write app edit
   Future<T> writeAppEdit<T>(
       Future<T> Function(AndroidPublisherAppEdit appEdit) action,
       {bool? changesNotSentForReview}) async {
@@ -57,30 +95,34 @@ class AndroidPublisher {
     }
   }
 
+  /// List tracks
   Future<void> listTracks() async {
     var apAppEdit = await newAppEdit();
     try {
-      var response = await api.edits.tracks.list(packageName, apAppEdit.id);
+      var response = await _api.edits.tracks.list(packageName, apAppEdit.id);
       for (var track in response.tracks!) {
-        print(track.track);
+        stdout.writeln(track.track);
       }
     } finally {
       await apAppEdit.delete();
     }
   }
 
+  /// List bundles
   Future<void> listBundles() async {
     await readOnlyAppEdit((appEdit) async {
       await appEdit.listBundles();
     });
   }
 
+  /// Check if versionCode exists
   Future<bool> hasBundleVersionCode(int versionCode) async {
     return await readOnlyAppEdit((appEdit) async {
       return await appEdit.hasBundleVersionCode(versionCode);
     });
   }
 
+  /// Publish version code
   Future<void> publishVersionCode(
       {required String trackName, required int versionCode}) async {
     await writeAppEdit((appEdit) async {
@@ -111,42 +153,51 @@ class AndroidPublisher {
   }
 }
 
+/// Android Publisher App Edit
 class AndroidPublisherAppEdit {
+  /// Publisher
   final AndroidPublisher publisher;
+
+  /// App edit
   final AppEdit appEdit;
 
+  /// Id
   String get id => appEdit.id!;
 
+  /// Package name
   String get packageName => publisher.packageName;
 
-  AndroidPublisherApi get api => publisher.api;
+  AndroidPublisherApi get _api => publisher._api;
 
+  /// Constructor
   AndroidPublisherAppEdit({required this.appEdit, required this.publisher});
 
   /// Safe
   Future<void> delete() async {
     try {
-      await publisher.api.edits.delete(packageName, id);
+      await publisher._api.edits.delete(packageName, id);
     } catch (e) {
-      print('Error deleting edit $id: $e');
+      stderr.writeln('Error deleting edit $id: $e');
     }
   }
 
+  /// List bundles
   Future<void> listBundles() async {
-    var aabListResponse = await api.edits.bundles.list(packageName, id);
+    var aabListResponse = await _api.edits.bundles.list(packageName, id);
     if (aabListResponse.bundles != null) {
       for (var bundle in aabListResponse.bundles!) {
-        print('aab: ${bundle.versionCode}');
+        stdout.writeln('aab: ${bundle.versionCode}');
         //print(bundle.versionCode);
       }
     }
   }
 
+  /// Check if versionCode exists
   Future<bool> hasBundleVersionCode(int versionCode) async {
-    var aabListResponse = await api.edits.bundles.list(packageName, id);
+    var aabListResponse = await _api.edits.bundles.list(packageName, id);
     if (aabListResponse.bundles != null) {
       for (var bundle in aabListResponse.bundles!) {
-        print('aab: ${bundle.versionCode}');
+        stdout.writeln('aab: ${bundle.versionCode}');
         //print(bundle.versionCode);
         if (bundle.versionCode == versionCode) {
           return true;
@@ -156,17 +207,19 @@ class AndroidPublisherAppEdit {
     return false;
   }
 
+  /// Upload bundle
   Future<void> uploadBundle(String aabPath) async {
     var file = File(aabPath);
     var size = file.statSync().size;
     var media = Media(file.openRead(), size);
 
-    print('uploading: $size bytes $aabPath');
+    stdout.writeln('uploading: $size bytes $aabPath');
     var aab =
-        await api.edits.bundles.upload(packageName, id, uploadMedia: media);
-    print(aab.versionCode);
+        await _api.edits.bundles.upload(packageName, id, uploadMedia: media);
+    stdout.writeln(aab.versionCode);
   }
 
+  /// Publish track
   Future publishTrack(String trackName, {required int versionCode}) async {
     var track = Track();
     // track.track = trackName;
@@ -175,16 +228,16 @@ class AndroidPublisherAppEdit {
         ..versionCodes = [versionCode.toString()]
         ..status = 'completed'
     ]; // v2:versionCodes = [versionCode];
-    print('updating track: ${track.releases!.first.toJson()}');
-    await api.edits.tracks.update(track, packageName, appEdit.id!, trackName);
+    stdout.writeln('updating track: ${track.releases!.first.toJson()}');
+    await _api.edits.tracks.update(track, packageName, appEdit.id!, trackName);
   }
 
   /// Commit only as validate fails on changesNotSentForReview
   Future<void> validateAndCommit({bool? changesNotSentForReview}) async {
     if (changesNotSentForReview != true) {
-      await api.edits.validate(packageName, id);
+      await _api.edits.validate(packageName, id);
     }
-    await api.edits.commit(packageName, id,
+    await _api.edits.commit(packageName, id,
         changesNotSentForReview: changesNotSentForReview);
   }
 }
