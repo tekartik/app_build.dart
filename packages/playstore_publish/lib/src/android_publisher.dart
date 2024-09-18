@@ -143,6 +143,8 @@ class AndroidPublisher {
       var found = await appEdit.hasBundleVersionCode(versionCode);
       if (!found) {
         await appEdit.uploadBundle(aabPath);
+      } else {
+        stdout.writeln('versionCode $versionCode already exists');
       }
 
       await appEdit.publishTrack(
