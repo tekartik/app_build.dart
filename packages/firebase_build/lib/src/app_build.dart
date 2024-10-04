@@ -65,10 +65,11 @@ class FlutterFirebaseWebAppOptions {
 }
 
 /// Convenient builder.
-class FlutterFirebaseWebAppBuilder {
+class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
   final FlutterFirebaseWebAppOptions options;
 
   /// Project path.
+  @override
   String get path => options.path;
 
   FlutterFirebaseWebAppBuilder({required this.options});
