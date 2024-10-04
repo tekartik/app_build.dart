@@ -3,6 +3,7 @@ import 'package:process_run/shell.dart';
 import 'package:tekartik_flutter_build/app_build.dart';
 
 import 'firebase_deploy.dart';
+import 'package:tekartik_common_build/version_io.dart' as version_io;
 
 /// Build a web app
 Future<void> flutterWebAppBuild(String directory) async {
@@ -100,6 +101,10 @@ class FlutterFirebaseWebAppBuilder {
 
   Future<void> clean() async {
     await flutterWebAppClean(options.path);
+  }
+
+  Future<void> generateVersion() async {
+    await version_io.generateVersion(path: options.path);
   }
 
   Future<void> serve({FirebaseWebAppActionController? controller}) async {

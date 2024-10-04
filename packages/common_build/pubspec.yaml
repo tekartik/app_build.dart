@@ -1,0 +1,17 @@
+name: tekartik_common_build
+description: Common build helper.
+version: 1.0.0
+publish_to: none;
+
+environment:
+  sdk: ^3.5.0
+
+# Add regular dependencies here.
+dependencies:
+  dev_build: '>=1.0.0'
+  process_run: '>=1.2.0'
+  path: '>=1.8.0'
+
+dev_dependencies:
+  lints: '>=4.0.0'
+  test: '>=1.24.0'

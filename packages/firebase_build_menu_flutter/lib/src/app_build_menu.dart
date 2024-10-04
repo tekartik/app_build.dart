@@ -52,6 +52,7 @@ void menuFirebaseWebAppBuilderContent(
     cancel();
     await builder.clean();
   });
+  item('generateVersion', () async {});
 }
 
 void menuFirebaseAppContent(

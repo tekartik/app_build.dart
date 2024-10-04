@@ -16,6 +16,11 @@ dependencies:
       url: https://github.com/tekartik/app_build.dart
       ref: dart3a
       path: packages/flutter_build
+  tekartik_common_build:
+    git:
+      url: https://github.com/tekartik/app_build.dart
+      ref: dart3a
+      path: packages/common_build
   tekartik_deploy:
     git:
       url: https://github.com/tekartik/deploy.dart
@@ -43,3 +48,5 @@ dependency_overrides:
     path: ../web_publish
   tekartik_flutter_build:
     path: ../flutter_build
+  tekartik_common_build:
+    path: ../common_build
