@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
 
+/// Generate lib/src/version.dart with a text
 Future<void> generateVersion({String path = '.'}) async {
   var pubspecYamlMap = await pathGetPubspecYamlMap(path);
 

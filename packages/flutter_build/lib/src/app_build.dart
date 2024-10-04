@@ -2,6 +2,7 @@ import 'package:dev_build/build_support.dart';
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
+import 'package:tekartik_common_build/common_app_builder.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
 
@@ -59,11 +60,12 @@ class FlutterWebAppOptions {
 }
 
 /// Convenient builder.
-class FlutterWebAppBuilder {
+class FlutterWebAppBuilder implements CommonAppBuilder {
   final FlutterWebAppOptions options;
   final WebAppDeployer? deployer;
 
   /// Project path.
+  @override
   String get path => options.path;
 
   FlutterWebAppBuilder({required this.options, this.deployer});
