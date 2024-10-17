@@ -1,4 +1,5 @@
 import 'package:dev_build/build_support.dart';
+import 'package:fs_shim/utils/io/read_write.dart';
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
@@ -12,7 +13,7 @@ Future<void> generateVersion({String path = '.'}) async {
   var dependencies = pubspecYamlGetDependenciesPackageName(pubspecYamlMap);
   var file = File(join(path, 'lib', 'src', 'version.dart'));
   file.parent.createSync(recursive: true);
-  await file.writeAsString('''
+  await file.writeAsString(stringToIoString('''
 ${dependencies.contains(versionPackageName) ? '' : '// ignore: depend_on_referenced_packages'}
 import 'package:pub_semver/pub_semver.dart';
 
@@ -20,7 +21,7 @@ import 'package:pub_semver/pub_semver.dart';
 const packageVersionText = '$version';
 /// Package version
 final packageVersion = Version.parse(packageVersionText);
-''');
+'''));
   await Shell(workingDirectory: path)
       .run('dart format ${shellArgument(file.path)}');
 }

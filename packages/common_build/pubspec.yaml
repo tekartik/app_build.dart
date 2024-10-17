@@ -11,6 +11,7 @@ dependencies:
   dev_build: '>=1.0.0+14'
   process_run: '>=1.2.0'
   path: '>=1.8.0'
+  fs_shim: '>=2.3.2+3'
 
 dev_dependencies:
   lints: '>=4.0.0'
