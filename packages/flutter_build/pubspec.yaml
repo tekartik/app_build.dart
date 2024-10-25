@@ -7,9 +7,9 @@ environment:
   sdk: ^3.5.0
 
 dependencies:
-  path: '>=1.7.0'
-  process_run: '>=1.0.0+1'
-  dev_build: '>=0.1.0'
+  path: ">=1.9.0"
+  process_run: ">=1.2.1+1"
+  dev_build: ">=1.1.0+2"
   tekartik_common_build:
     git:
       url: https://github.com/tekartik/app_build.dart
@@ -31,7 +31,7 @@ dependencies:
       ref: dart3a
       path: packages/web_publish
 dev_dependencies:
-  test: '>=1.14.4'
+  test: ">=1.24.0"
 
 dependency_overrides:
   tekartik_web_publish:
