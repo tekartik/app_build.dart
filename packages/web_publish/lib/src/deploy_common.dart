@@ -1,12 +1,27 @@
 import 'package:path/path.dart';
 
 /// Web deploy options.
-abstract class WebAppDeployOptions {}
+abstract class WebAppDeployOptions {
+  /// No specific options.
+  WebAppDeployOptions();
+}
 
 /// Common web app deployer
 abstract class WebAppDeployer {
   /// Deploy.
   Future<void> deploy({String? path});
+
+  /// Default just deploy to deploy/web
+  factory WebAppDeployer() {
+    return _WebAppDeployer();
+  }
+}
+
+class _WebAppDeployer implements WebAppDeployer {
+  @override
+  Future<void> deploy({String? path}) async {
+    // no deploy
+  }
 }
 
 /// Surge web app deployment.
