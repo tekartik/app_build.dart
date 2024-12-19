@@ -96,22 +96,21 @@ class AndroidPublisher {
   }
 
   /// List tracks
-  Future<void> listTracks() async {
+  Future<List<String>> listTracks() async {
     var apAppEdit = await newAppEdit();
     try {
       var response = await _api.edits.tracks.list(packageName, apAppEdit.id);
-      for (var track in response.tracks!) {
-        stdout.writeln(track.track);
-      }
+      var tracks = response.tracks!.map((e) => e.track!).toList();
+      return tracks;
     } finally {
       await apAppEdit.delete();
     }
   }
 
   /// List bundles
-  Future<void> listBundles() async {
-    await readOnlyAppEdit((appEdit) async {
-      await appEdit.listBundles();
+  Future<List<int>> listBundles() async {
+    return await readOnlyAppEdit((appEdit) async {
+      return await appEdit.listBundles();
     });
   }
 
@@ -130,6 +129,14 @@ class AndroidPublisher {
         trackName,
         versionCode: versionCode,
       );
+    });
+  }
+
+  /// Publish version code
+  Future<int?> getTrackVersionCode({required String trackName}) async {
+    return await readOnlyAppEdit((appEdit) async {
+      var versionCode = await appEdit.getTrackVersionCode(trackName);
+      return versionCode;
     });
   }
 
@@ -184,14 +191,13 @@ class AndroidPublisherAppEdit {
   }
 
   /// List bundles
-  Future<void> listBundles() async {
+  Future<List<int>> listBundles() async {
     var aabListResponse = await _api.edits.bundles.list(packageName, id);
     if (aabListResponse.bundles != null) {
-      for (var bundle in aabListResponse.bundles!) {
-        stdout.writeln('aab: ${bundle.versionCode}');
-        //print(bundle.versionCode);
-      }
+      var bundleList = aabListResponse.bundles!.map((e) => e.versionCode!);
+      return bundleList.toList();
     }
+    return <int>[];
   }
 
   /// Check if versionCode exists
@@ -232,6 +238,23 @@ class AndroidPublisherAppEdit {
     ]; // v2:versionCodes = [versionCode];
     stdout.writeln('updating track: ${track.releases!.first.toJson()}');
     await _api.edits.tracks.update(track, packageName, appEdit.id!, trackName);
+  }
+
+  /// Publish track
+  Future<int?> getTrackVersionCode(String trackName) async {
+    //stdout.writeln('getting track: ${track.releases!.first.toJson()}');
+    var track =
+        await _api.edits.tracks.get(packageName, appEdit.id!, trackName);
+    var releases = track.releases;
+    if (releases != null) {
+      for (var release in releases) {
+        if (release.status == 'completed') {
+          return int.parse(release.versionCodes!.first);
+        }
+      }
+    }
+    return null;
+    //print(track.toJson());
   }
 
   /// Commit only as validate fails on changesNotSentForReview

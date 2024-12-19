@@ -6,3 +6,5 @@
 # Local
 .local/
 
+/pubspec.lock
+/.dart_tool/
