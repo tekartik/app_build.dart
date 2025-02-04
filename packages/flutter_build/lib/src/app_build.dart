@@ -25,14 +25,23 @@ enum FlutterWebRenderer {
 
 /// Build options.
 class FlutterWebAppBuildOptions {
+  /// Target
+  ///
+  /// The main entry-point file of the application, as run on the device.
+  /// If the "--target" option is omitted, but a file name is provided on the command line, then that is used
+  /// instead.
+  ///
+  /// (defaults to "lib/main.dart")
+  final String? target;
+
   /// Renderer
-  FlutterWebRenderer? renderer;
+  final FlutterWebRenderer? renderer;
 
   /// Compile as wasm
-  bool? wasm;
+  final bool? wasm;
 
   /// Build options.
-  FlutterWebAppBuildOptions({this.renderer, this.wasm});
+  FlutterWebAppBuildOptions({this.renderer, this.wasm, this.target});
 }
 
 /// Web app options
@@ -111,16 +120,23 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
         deployer: deployer);
   }
 
-  Shell get _shell => controller?.shell ?? Shell();
+  Shell get _shell => controller?.shell ?? Shell(workingDirectory: path);
 
   /// Build
   Future<void> build() async {
+    await buildOnly();
+    await _webAppBuildToDeploy();
+  }
+
+  /// Build
+  Future<void> buildOnly() async {
+    var buildOptions = options.buildOptions;
     var shell = _shell;
     var renderOptions = '';
-    var wasm = options.buildOptions?.wasm ?? false;
+    var wasm = buildOptions?.wasm ?? false;
     if (!wasm) {
       // not compatible with wasm
-      switch (options.buildOptions?.renderer) {
+      switch (buildOptions?.renderer) {
         case FlutterWebRenderer.html:
           renderOptions = ' --web-renderer html';
           break;
@@ -131,8 +147,12 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       }
     }
     var wasmOptions = wasm ? ' --wasm' : '';
-    await shell.run('flutter build web$renderOptions$wasmOptions');
-    await _webAppBuildToDeploy();
+    var targetOptions = '';
+    if (buildOptions?.target != null) {
+      targetOptions = ' --target ${buildOptions!.target}';
+    }
+    await shell
+        .run('flutter build web$renderOptions$wasmOptions$targetOptions');
   }
 
   /// Copy to deploy using deploy.yaml
