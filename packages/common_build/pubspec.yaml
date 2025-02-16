@@ -4,17 +4,17 @@ version: 1.0.0
 publish_to: none;
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.6.0
 
 # Add regular dependencies here.
 dependencies:
-  dev_build: '>=1.0.0+14'
-  process_run: '>=1.2.0'
-  path: '>=1.8.0'
-  fs_shim: '>=2.3.2+3'
+  dev_build: ">=1.1.0+2"
+  process_run: ">=1.2.1+1"
+  path: ">=1.9.0"
+  fs_shim: ">=2.3.3+1"
 
 dev_dependencies:
-  lints: '>=4.0.0'
+  lints: ">=5.0.0"
   tekartik_lints:
     git:
       url: https://github.com/tekartik/common.dart

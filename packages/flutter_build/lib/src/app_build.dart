@@ -17,6 +17,7 @@ String _fixFolder(String path, String folder) {
 /// Web rendered (html deprecated
 enum FlutterWebRenderer {
   /// Deprecated
+  @Deprecated('no longer supported')
   html,
 
   /// Default
@@ -132,9 +133,9 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   Future<void> buildOnly() async {
     var buildOptions = options.buildOptions;
     var shell = _shell;
-    var renderOptions = '';
+    // var renderOptions = '';
     var wasm = buildOptions?.wasm ?? false;
-    if (!wasm) {
+    /*if (!wasm) {
       // not compatible with wasm
       switch (buildOptions?.renderer) {
         case FlutterWebRenderer.html:
@@ -145,14 +146,13 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
           break;
         default:
       }
-    }
+    }*/
     var wasmOptions = wasm ? ' --wasm' : '';
     var targetOptions = '';
     if (buildOptions?.target != null) {
       targetOptions = ' --target ${buildOptions!.target}';
     }
-    await shell
-        .run('flutter build web$renderOptions$wasmOptions$targetOptions');
+    await shell.run('flutter build web$wasmOptions$targetOptions');
   }
 
   /// Copy to deploy using deploy.yaml

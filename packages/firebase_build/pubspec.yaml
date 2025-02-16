@@ -4,13 +4,13 @@ version: 0.2.0
 publish_to: none
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.6.0
 
 dependencies:
-  cv: '>=1.0.0'
-  path: '>=1.7.0'
-  process_run: '>=0.10.2'
-  dev_build: '>=0.1.0'
+  cv: ">=1.1.0+4"
+  path: ">=1.9.0"
+  process_run: ">=1.2.1+1"
+  dev_build: ">=1.1.0+2"
   tekartik_flutter_build:
     git:
       url: https://github.com/tekartik/app_build.dart
@@ -41,7 +41,7 @@ dependencies:
       url: https://github.com/tekartik/common_utils.dart
       ref: dart3a
 dev_dependencies:
-  test: '>=1.14.4'
+  test: ">=1.24.0"
 
 dependency_overrides:
   tekartik_web_publish:

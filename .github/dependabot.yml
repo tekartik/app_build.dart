@@ -6,7 +6,15 @@ enable-beta-ecosystems: true
 
 updates:
   - package-ecosystem: "pub"
+    directory: "."
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pub"
     directory: "packages/appstore_publish"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pub"
+    directory: "packages/common_build"
     schedule:
       interval: "monthly"
   - package-ecosystem: "pub"
@@ -15,6 +23,14 @@ updates:
       interval: "monthly"
   - package-ecosystem: "pub"
     directory: "packages/firebase_build_menu_flutter"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pub"
+    directory: "packages/flutter_build"
+    schedule:
+      interval: "monthly"
+  - package-ecosystem: "pub"
+    directory: "packages/gcr_build"
     schedule:
       interval: "monthly"
   - package-ecosystem: "pub"

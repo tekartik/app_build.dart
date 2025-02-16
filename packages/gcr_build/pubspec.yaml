@@ -4,17 +4,17 @@ version: 1.0.0
 publish_to: none
 
 environment:
-  sdk: ^3.5.0
+  sdk: ^3.6.0
 
 # Add regular dependencies here.
 dependencies:
-  path:
+  path: ">=1.9.0"
   tekartik_common_utils:
     git:
       url: https://github.com/tekartik/common_utils.dart
       ref: dart3a
-  dev_build: ">=1.0.1"
-  process_run: ">=1.2.1"
+  dev_build: ">=1.1.0+2"
+  process_run: ">=1.2.1+1"
   tekartik_common_build:
     git:
       url: https://github.com/tekartik/app_build.dart
