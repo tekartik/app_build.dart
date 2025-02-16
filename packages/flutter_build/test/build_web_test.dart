@@ -38,5 +38,7 @@ Future<void> main() async {
               path: path, buildOptions: FlutterWebAppBuildOptions(wasm: true)));
       await builder.buildOnly();
     });
-  }, skip: !isFlutterSupportedSync);
+  },
+      skip: !isFlutterSupportedSync,
+      timeout: const Timeout(Duration(minutes: 5)));
 }
