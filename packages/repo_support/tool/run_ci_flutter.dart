@@ -12,5 +12,5 @@ Future<void> main(List<String> args) async {
     await prj.ready;
     await prj.pubGet();
     await shell.run('dart test test/build_web_test.dart');
-  });
+  }, timeout: const Timeout(Duration(minutes: 5)));
 }

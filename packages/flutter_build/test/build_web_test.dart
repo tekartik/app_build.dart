@@ -16,7 +16,7 @@ Future<void> main() async {
       if (!_createdOnce && (force == true || !Directory(path).existsSync())) {
         var shell = Shell(workingDirectory: path);
         Directory(path).createSync(recursive: true);
-        await shell.run('flutter create .');
+        await shell.run('flutter create --platforms web .');
         _createdOnce = true;
       }
     }
