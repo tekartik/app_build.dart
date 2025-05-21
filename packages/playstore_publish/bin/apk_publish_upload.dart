@@ -14,7 +14,7 @@ import 'package:tekartik_io_auth_utils/io_auth_utils.dart';
 
 final List<String> scopes = [
   //emailScope,
-  AndroidPublisherApi.androidpublisherScope
+  AndroidPublisherApi.androidpublisherScope,
 ]; //['email'];
 
 const String alphaTrackName = 'alpha';
@@ -26,8 +26,11 @@ Future main(List<String> args) async {
   var parser = ArgParser();
 
   parser.addFlag(_flagHelp, abbr: 'h', help: 'Usage help', negatable: false);
-  parser.addOption(_optionAuth,
-      help: 'Auth json definition file', defaultsTo: null);
+  parser.addOption(
+    _optionAuth,
+    help: 'Auth json definition file',
+    defaultsTo: null,
+  );
 
   var results = parser.parse(args);
 
@@ -88,8 +91,11 @@ Future main(List<String> args) async {
         var data = await File(apkFile).readAsBytes();
         var media = commons.Media(Stream.fromIterable([data]), data.length);
         stdout.writeln('uploading ${data.length}...');
-        var apk = await api.edits.apks
-            .upload(packageName, appEdit.id!, uploadMedia: media);
+        var apk = await api.edits.apks.upload(
+          packageName,
+          appEdit.id!,
+          uploadMedia: media,
+        );
         stdout.writeln('uploaded');
         stdout.writeln('versionCode: ${apk.versionCode}');
 
@@ -98,10 +104,14 @@ Future main(List<String> args) async {
         track.releases = [
           TrackRelease()
             ..versionCodes = [apk.versionCode.toString()]
-            ..status = 'completed'
+            ..status = 'completed',
         ]; // v2:versionCodes = [versionCode];
-        track = await api.edits.tracks
-            .update(track, packageName, appEdit.id!, alphaTrackName);
+        track = await api.edits.tracks.update(
+          track,
+          packageName,
+          appEdit.id!,
+          alphaTrackName,
+        );
         stdout.writeln('versionCodes: ${track.releases!.first.versionCodes}');
 
         await api.edits.commit(packageName, appEdit.id!);

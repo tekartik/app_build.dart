@@ -11,13 +11,15 @@ String _fixFolder(String path, String folder) {
 }
 
 /// Copy to deploy using deploy.yaml
-Future<void> webAppBuildToDeploy(String path,
-    {
-    /// deploy dir from path
-    required String deployDir,
+Future<void> webAppBuildToDeploy(
+  String path, {
 
-    /// Build folder from path
-    required String buildDir}) async {
+  /// deploy dir from path
+  required String deployDir,
+
+  /// Build folder from path
+  required String buildDir,
+}) async {
   buildDir = _fixFolder(path, buildDir);
   deployDir = _fixFolder(path, deployDir);
 
@@ -27,8 +29,9 @@ Future<void> webAppBuildToDeploy(String path,
     throw StateError('Missing deploy.yaml file ($deployFile)');
   }
   await fsDeploy(
-      options: FsDeployOptions()..noSymLink = true,
-      yaml: deployFile,
-      src: Directory(buildDir),
-      dst: Directory(deployDir));
+    options: FsDeployOptions()..noSymLink = true,
+    yaml: deployFile,
+    src: Directory(buildDir),
+    dst: Directory(deployDir),
+  );
 }

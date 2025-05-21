@@ -57,8 +57,10 @@ Future uploadBundle(LocalAab localAab) async {
 /// Publish to internal by default
 Future publishBundle(LocalAab localAab, {String? track}) async {
   track ??= publishTrackInternal;
-  return await manageBundle(localAab,
-      publishOptions: PublishOptions(track: track));
+  return await manageBundle(
+    localAab,
+    publishOptions: PublishOptions(track: track),
+  );
 }
 
 /// Upload options
@@ -108,10 +110,12 @@ const publishTrackWearInternal = 'wear:internal';
 const publishTrackWearProduction = 'wear:production';
 
 /// manageBundle
-Future manageBundle(LocalAab localAab,
-    {String? serviceAccountPath,
-    UploadOptions? uploadOptions,
-    PublishOptions? publishOptions}) async {
+Future manageBundle(
+  LocalAab localAab, {
+  String? serviceAccountPath,
+  UploadOptions? uploadOptions,
+  PublishOptions? publishOptions,
+}) async {
   uploadOptions ??= _noUploadOptions;
   publishOptions ??= _noPublishOptions;
   await localAab.init();
@@ -120,8 +124,9 @@ Future manageBundle(LocalAab localAab,
   // Try to look for a local service account
   Object? exception;
   var serviceAccountFileFound = false;
-  var serviceAccountFile =
-      File(serviceAccountPath ?? join('.local', 'service_account.json'));
+  var serviceAccountFile = File(
+    serviceAccountPath ?? join('.local', 'service_account.json'),
+  );
   try {
     var serviceAccountJson = await serviceAccountFile.readAsString();
     // print(serviceAccountJson);
@@ -151,11 +156,14 @@ Future manageBundle(LocalAab localAab,
       stdout.writeln(track.track);
     }
 
-    stdout
-        .writeln('package: $packageName, versionCode: ${localAab.versionCode}');
+    stdout.writeln(
+      'package: $packageName, versionCode: ${localAab.versionCode}',
+    );
     // Search in apks
-    var apkListResponse =
-        await publish.edits.apks.list(packageName, appEdit.id!);
+    var apkListResponse = await publish.edits.apks.list(
+      packageName,
+      appEdit.id!,
+    );
     var found = false;
     if (apkListResponse.apks != null) {
       for (var apk in apkListResponse.apks!) {
@@ -174,8 +182,10 @@ Future manageBundle(LocalAab localAab,
     }
 
     // Search and aabs
-    var aabListResponse =
-        await publish.edits.bundles.list(packageName, appEdit.id!);
+    var aabListResponse = await publish.edits.bundles.list(
+      packageName,
+      appEdit.id!,
+    );
     if (aabListResponse.bundles != null) {
       for (var bundle in aabListResponse.bundles!) {
         stdout.writeln('aab: ${bundle.versionCode}');
@@ -207,8 +217,11 @@ Future manageBundle(LocalAab localAab,
     int? versionCode;
     if (uploadOptions != _noUploadOptions) {
       stdout.writeln('uploading: $size bytes $localAab');
-      var aab = await publish.edits.bundles
-          .upload(packageName, editId!, uploadMedia: media);
+      var aab = await publish.edits.bundles.upload(
+        packageName,
+        editId!,
+        uploadMedia: media,
+      );
       stdout.writeln(aab.versionCode);
       versionCode = aab.versionCode;
     } else {
@@ -222,11 +235,15 @@ Future manageBundle(LocalAab localAab,
       track.releases = [
         TrackRelease()
           ..versionCodes = [versionCode.toString()]
-          ..status = 'completed'
+          ..status = 'completed',
       ]; // v2:versionCodes = [versionCode];
       stdout.writeln('updating track: ${track.releases!.first.toJson()}');
-      await publish.edits.tracks
-          .update(track, packageName, appEdit.id!, trackName);
+      await publish.edits.tracks.update(
+        track,
+        packageName,
+        appEdit.id!,
+        trackName,
+      );
     }
 
     stdout.writeln('uploaded');

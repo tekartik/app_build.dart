@@ -5,8 +5,9 @@ import 'package:path/path.dart';
 import 'package:tekartik_firebase_build/app_build.dart';
 import 'package:tekartik_firebase_build/firebase_deploy.dart';
 
-void menuFirebaseWebAppBuilderContent(
-    {required FlutterFirebaseWebAppBuilder builder}) {
+void menuFirebaseWebAppBuilderContent({
+  required FlutterFirebaseWebAppBuilder builder,
+}) {
   var path = builder.options.path;
 
   enter(() async {
@@ -55,8 +56,9 @@ void menuFirebaseWebAppBuilderContent(
   item('generateVersion', () async {});
 }
 
-void menuFirebaseAppContent(
-    {required List<FlutterFirebaseWebAppBuilder> builders}) {
+void menuFirebaseAppContent({
+  required List<FlutterFirebaseWebAppBuilder> builders,
+}) {
   for (var builder in builders) {
     menu('target ${builder.target}', () {
       menuFirebaseWebAppBuilderContent(builder: builder);

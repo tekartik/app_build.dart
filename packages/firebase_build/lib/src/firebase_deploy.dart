@@ -48,8 +48,12 @@ String _fixFolder(String path, String folder) {
 }
 
 /// Deploy from deploy/firebase/hosting
-Future firebaseWebAppDeploy(String path, FirebaseDeployOptions options,
-    {String? deployDir, FirebaseWebAppActionController? controller}) async {
+Future firebaseWebAppDeploy(
+  String path,
+  FirebaseDeployOptions options, {
+  String? deployDir,
+  FirebaseWebAppActionController? controller,
+}) async {
   deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
   var projectId = options.projectId;
@@ -60,13 +64,17 @@ Future firebaseWebAppDeploy(String path, FirebaseDeployOptions options,
 
   await _firebaseWebAppPrepareHosting(path, options, deployDir: deployDir);
 
-  await shell
-      .run('firebase --project $projectId deploy --only hosting:$target');
+  await shell.run(
+    'firebase --project $projectId deploy --only hosting:$target',
+  );
 }
 
 /// Configure hosting for target if needed
-Future _firebaseWebAppPrepareHosting(String path, FirebaseDeployOptions options,
-    {String? deployDir}) async {
+Future _firebaseWebAppPrepareHosting(
+  String path,
+  FirebaseDeployOptions options, {
+  String? deployDir,
+}) async {
   deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
   var projectId = options.projectId;
@@ -74,10 +82,17 @@ Future _firebaseWebAppPrepareHosting(String path, FirebaseDeployOptions options,
   var hostingId = options.hostingId;
 
   try {
-    var firebaseRcMap = parseJsonObject(
-        File(join(deployDir, '.firebaserc')).readAsStringSync())!;
-    var existingHostingId = firebaseRcMap
-        .getKeyPathValue(['targets', projectId, 'hosting', target, 0]);
+    var firebaseRcMap =
+        parseJsonObject(
+          File(join(deployDir, '.firebaserc')).readAsStringSync(),
+        )!;
+    var existingHostingId = firebaseRcMap.getKeyPathValue([
+      'targets',
+      projectId,
+      'hosting',
+      target,
+      0,
+    ]);
     if (existingHostingId == hostingId) {
       // Hosting id matches
       return;
@@ -88,15 +103,21 @@ Future _firebaseWebAppPrepareHosting(String path, FirebaseDeployOptions options,
   var shell = Shell().pushd(deployDir);
   await shell.run('firebase --project $projectId target:clear hosting $target');
   await shell.run(
-      'firebase --project $projectId target:apply hosting $target $hostingId');
+    'firebase --project $projectId target:apply hosting $target $hostingId',
+  );
 }
 
 /// Copy to deploy using deploy.yaml
-Future<void> firebaseWebAppBuildToDeploy(String path,
-    {String? deployDir, String folder = 'web'}) async {
+Future<void> firebaseWebAppBuildToDeploy(
+  String path, {
+  String? deployDir,
+  String folder = 'web',
+}) async {
   var buildFolder = join(path, 'build', folder);
-  deployDir =
-      join(_fixFolder(path, deployDir ?? firebaseDefaultHostingDir), 'public');
+  deployDir = join(
+    _fixFolder(path, deployDir ?? firebaseDefaultHostingDir),
+    'public',
+  );
 
   var deployFile = File(join(buildFolder, 'deploy.yaml'));
   // ignore: avoid_slow_async_io
@@ -104,18 +125,23 @@ Future<void> firebaseWebAppBuildToDeploy(String path,
     throw StateError('Missing deploy.yaml file ($deployFile)');
   }
   await fsDeploy(
-      options: FsDeployOptions()..noSymLink = true,
-      yaml: deployFile,
-      src: Directory(buildFolder),
-      dst: Directory(deployDir));
+    options: FsDeployOptions()..noSymLink = true,
+    yaml: deployFile,
+    src: Directory(buildFolder),
+    dst: Directory(deployDir),
+  );
 }
 
 @Deprecated('Typo error - Use firebaseWebAppBuildToDeploy')
 var firebaseWepAppBuildToDeploy = firebaseWebAppBuildToDeploy;
 
 /// Deploy from deploy/firebase/hosting
-Future<void> firebaseWebAppServe(String path, FirebaseDeployOptions options,
-    {String? deployDir, FirebaseWebAppActionController? controller}) async {
+Future<void> firebaseWebAppServe(
+  String path,
+  FirebaseDeployOptions options, {
+  String? deployDir,
+  FirebaseWebAppActionController? controller,
+}) async {
   deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
   var projectId = options.projectId;
@@ -126,7 +152,8 @@ Future<void> firebaseWebAppServe(String path, FirebaseDeployOptions options,
   controller?._shell = shell;
   await _firebaseWebAppPrepareHosting(path, options, deployDir: deployDir);
   await shell.run(
-      'firebase emulators:start --project $projectId  --only hosting:$target');
+    'firebase emulators:start --project $projectId  --only hosting:$target',
+  );
 }
 
 class FirebaseWebAppActionController {

@@ -15,11 +15,13 @@ void main() {
       'name': 'projects/my_project/locations/my_region/repositories/my_repo',
       'satisfiesPzi': true,
       'sizeBytes': '550708161',
-      'updateTime': '2024-10-04T18:24:41.972377Z'
+      'updateTime': '2024-10-04T18:24:41.972377Z',
     };
     var repo = GcrArtifactRepository.fromJson(artifactRepositoryMap);
-    expect(repo.name,
-        'projects/my_project/locations/my_region/repositories/my_repo');
+    expect(
+      repo.name,
+      'projects/my_project/locations/my_region/repositories/my_repo',
+    );
     expect(repo.project, 'my_project');
     expect(repo.region, 'my_region');
     expect(repo.repository, 'my_repo');

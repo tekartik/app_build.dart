@@ -26,7 +26,7 @@ class GcrProject {
 
   /// Constructor
   GcrProject({this.path = '.', required this.options, bool? verbose})
-      : verbose = verbose ?? false;
+    : verbose = verbose ?? false;
 }
 
 /// Helpers
@@ -89,7 +89,7 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
       shellStdioLinesGrouper.runZoned(() async {
         await configureDockerAuth();
         await createArtifactRepository();
-      })
+      }),
     ];
     await Future.wait(futures);
     await dockerPush();

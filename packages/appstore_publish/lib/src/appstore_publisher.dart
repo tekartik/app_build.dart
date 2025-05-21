@@ -8,16 +8,20 @@ class AppStoreCredentialsUserPassword implements AppStoreCredentials {
   final String username;
   final String password;
 
-  AppStoreCredentialsUserPassword(
-      {required this.username, required this.password});
+  AppStoreCredentialsUserPassword({
+    required this.username,
+    required this.password,
+  });
 }
 
 class AppStoreCredentialsApiKeyIssuerId implements AppStoreCredentials {
   final String apiKey;
   final String issuerId;
 
-  AppStoreCredentialsApiKeyIssuerId(
-      {required this.apiKey, required this.issuerId});
+  AppStoreCredentialsApiKeyIssuerId({
+    required this.apiKey,
+    required this.issuerId,
+  });
 }
 
 /// Publisher for App Store Connect API
@@ -37,14 +41,16 @@ class AppStorePublisher {
   late final _shell = Shell(workingDirectory: path);
 
   /// Create a publisher
-  AppStorePublisher(
-      {AppStoreCredentials? credentials,
-      // Compat
-      this.issuerId,
-      // Compat
-      this.apiKey,
-      required this.path}) {
-    this.credentials = credentials ??
+  AppStorePublisher({
+    AppStoreCredentials? credentials,
+    // Compat
+    this.issuerId,
+    // Compat
+    this.apiKey,
+    required this.path,
+  }) {
+    this.credentials =
+        credentials ??
         AppStoreCredentialsApiKeyIssuerId(apiKey: apiKey!, issuerId: issuerId!);
   }
 
@@ -61,13 +67,15 @@ class AppStorePublisher {
   /// Typically in build/ios/ipa/xxx.ipa
   Future<void> validateIosApp({required String ipaPath}) async {
     await _shell.run(
-        'xcrun altool --validate-app -f ${shellArgument(ipaPath)} -t ios${_credentialsArgs()}');
+      'xcrun altool --validate-app -f ${shellArgument(ipaPath)} -t ios${_credentialsArgs()}',
+    );
   }
 
   /// Upload ios app to TestFlight.
   Future<void> uploadIosApp({required String ipaPath}) async {
     await _shell.run(
-        'xcrun altool --upload-app -f ${shellArgument(ipaPath)} -t ios${_credentialsArgs()}');
+      'xcrun altool --upload-app -f ${shellArgument(ipaPath)} -t ios${_credentialsArgs()}',
+    );
   }
 
   /// Validate and upload ios app to TestFlight.

@@ -4,13 +4,13 @@ version: 0.2.0
 publish_to: none
 
 environment:
-  sdk: ^3.6.0
+  sdk: ^3.7.0
 
 dependencies:
   cv: ">=1.1.0+4"
   path: ">=1.9.0"
   process_run: ">=1.2.1+1"
-  dev_build: ">=1.1.0+2"
+  dev_build: ">=1.1.2"
   tekartik_flutter_build:
     git:
       url: https://github.com/tekartik/app_build.dart

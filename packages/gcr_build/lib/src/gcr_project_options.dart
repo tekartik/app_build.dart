@@ -28,12 +28,13 @@ class GcrProjectOptions {
   final String? memory;
 
   /// Constructor
-  GcrProjectOptions(
-      {required this.projectId,
-      required this.region,
-      required this.name,
-      required this.image,
-      this.description,
-      required this.serviceName,
-      this.memory});
+  GcrProjectOptions({
+    required this.projectId,
+    required this.region,
+    required this.name,
+    required this.image,
+    this.description,
+    required this.serviceName,
+    this.memory,
+  });
 }

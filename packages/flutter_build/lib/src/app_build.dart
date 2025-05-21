@@ -21,7 +21,7 @@ enum FlutterWebRenderer {
   html,
 
   /// Default
-  canvasKit
+  canvasKit,
 }
 
 /// Build options.
@@ -60,13 +60,13 @@ class FlutterWebAppOptions {
   final FlutterWebAppBuildOptions? buildOptions;
 
   /// Web app options
-  FlutterWebAppOptions(
-      {
-      /// default to current directory
-      String? path,
-      String? deployDir,
-      int? webPort,
-      this.buildOptions}) {
+  FlutterWebAppOptions({
+    /// default to current directory
+    String? path,
+    String? deployDir,
+    int? webPort,
+    this.buildOptions,
+  }) {
     this.path = normalize(absolute(path ?? '.'));
     this.deployDir = deployDir ?? webAppDeployDirDefault;
     this.webPort = webPort ?? webAppServeWebPortDefault;
@@ -105,20 +105,21 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   String get path => options.path;
 
   /// Constructor
-  FlutterWebAppBuilder(
-      {FlutterWebAppOptions? options,
-      this.deployer,
-      this.controller,
-      this.target})
-      : options = options ?? FlutterWebAppOptions();
+  FlutterWebAppBuilder({
+    FlutterWebAppOptions? options,
+    this.deployer,
+    this.controller,
+    this.target,
+  }) : options = options ?? FlutterWebAppOptions();
 
   /// CopyWith
   FlutterWebAppBuilder copyWith({BuildShellController? controller}) {
     return FlutterWebAppBuilder(
-        controller: controller ?? this.controller,
-        options: options,
-        target: target,
-        deployer: deployer);
+      controller: controller ?? this.controller,
+      options: options,
+      target: target,
+      deployer: deployer,
+    );
   }
 
   Shell get _shell => controller?.shell ?? Shell(workingDirectory: path);
@@ -166,10 +167,11 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       throw StateError('Missing deploy.yaml file ($deployFile)');
     }
     await fsDeploy(
-        options: FsDeployOptions()..noSymLink = true,
-        yaml: deployFile,
-        src: Directory(buildFolder),
-        dst: Directory(deployDir));
+      options: FsDeployOptions()..noSymLink = true,
+      yaml: deployFile,
+      src: Directory(buildFolder),
+      dst: Directory(deployDir),
+    );
   }
 
   /// Clean
@@ -198,7 +200,8 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     var deployDir = _fixFolder(path, options.deployDir);
     var shell = _shell;
     await shell.run(
-        'dart pub global run dhttpd:dhttpd --path ${shellArgument(deployDir)} --port ${options.webPort} --headers=Cross-Origin-Embedder-Policy=credentialless;Cross-Origin-Opener-Policy=same-origin');
+      'dart pub global run dhttpd:dhttpd --path ${shellArgument(deployDir)} --port ${options.webPort} --headers=Cross-Origin-Embedder-Policy=credentialless;Cross-Origin-Opener-Policy=same-origin',
+    );
   }
 
   /// Build and serve
