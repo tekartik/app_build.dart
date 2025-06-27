@@ -82,10 +82,9 @@ Future _firebaseWebAppPrepareHosting(
   var hostingId = options.hostingId;
 
   try {
-    var firebaseRcMap =
-        parseJsonObject(
-          File(join(deployDir, '.firebaserc')).readAsStringSync(),
-        )!;
+    var firebaseRcMap = parseJsonObject(
+      File(join(deployDir, '.firebaserc')).readAsStringSync(),
+    )!;
     var existingHostingId = firebaseRcMap.getKeyPathValue([
       'targets',
       projectId,
