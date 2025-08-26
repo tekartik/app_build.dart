@@ -24,3 +24,4 @@ dev_dependencies:
       path: packages/lints
 
   test: '>=1.24.0'
+resolution: workspace

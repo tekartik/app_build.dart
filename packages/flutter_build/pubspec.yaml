@@ -32,9 +32,5 @@ dependencies:
       path: packages/web_publish
 dev_dependencies:
   test: ">=1.24.0"
+resolution: workspace
 
-dependency_overrides:
-  tekartik_web_publish:
-    path: ../web_publish
-  tekartik_common_build:
-    path: ../common_build

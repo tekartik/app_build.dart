@@ -19,3 +19,4 @@ dev_dependencies:
   test: ">=1.24.0"
   dev_build: ">=1.1.2"
   lints: ">=5.0.0"
+resolution: workspace

@@ -4,3 +4,11 @@ environment:
   sdk: ^3.9.0
 workspace:
   - packages/playstore_publish
+  - packages/appstore_publish
+  - packages/common_build
+  - packages/firebase_build
+  - packages/firebase_build_menu_flutter
+  - packages/flutter_build
+  - packages/gcr_build
+  - packages/repo_support
+  - packages/web_publish
