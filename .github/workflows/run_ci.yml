@@ -33,7 +33,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - run: dart --version
       - run: dart pub global activate dev_build
       - run: dart pub global run dev_build:run_ci --recursive
