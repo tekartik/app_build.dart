@@ -75,10 +75,14 @@ class UploadOptions {
 /// Publish options
 class PublishOptions {
   /// Track
-  final String track;
+  final String? track;
+
+  /// If true, changes that have not been sent for review will be ignored.
+  /// Sometimes necessary for initial publishing.
+  final bool? changesNotSentForReview;
 
   /// Constructor
-  PublishOptions({required this.track});
+  PublishOptions({this.track, this.changesNotSentForReview});
 }
 
 final _noPublishOptions = PublishOptions(track: _noTrack);
@@ -250,7 +254,7 @@ Future manageBundle(
 
     // await publishTrack('internal'); // 'alpha'
     if (publishOptions != _noPublishOptions) {
-      await publishTrack(publishOptions.track);
+      await publishTrack(publishOptions.track ?? publishTrackInternal);
     }
 
     await publish.edits.validate(packageName, editId!);
