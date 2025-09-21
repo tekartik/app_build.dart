@@ -12,13 +12,11 @@ dependencies:
   tekartik_common_utils:
     git:
       url: https://github.com/tekartik/common_utils.dart
-      ref: dart3a
   dev_build: ">=1.1.2"
   process_run: ">=1.2.1+1"
   tekartik_common_build:
     git:
       url: https://github.com/tekartik/app_build.dart
-      ref: dart3a
       path: packages/common_build
 
 dev_dependencies:

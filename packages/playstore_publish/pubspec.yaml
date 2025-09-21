@@ -17,11 +17,9 @@ dependencies:
   tekartik_io_auth_utils:
     git:
       url: https://github.com/tekartik/io_auth_utils.dart
-      ref: dart3a
   tekartik_android_utils:
     git:
       url: https://github.com/tekartik/android_utils.dart
-      ref: dart3a
     version: '>=0.1.0'
 dev_dependencies:
   lints: ">=5.0.0"
