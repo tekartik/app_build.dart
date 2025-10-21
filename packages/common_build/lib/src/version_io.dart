@@ -1,9 +1,9 @@
 import 'package:dev_build/build_support.dart';
 import 'package:fs_shim/utils/io/read_write.dart';
+import 'package:meta/meta.dart';
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
-import 'package:meta/meta.dart';
 import 'package:pub_semver/pub_semver.dart';
 
 String _generateContent({
