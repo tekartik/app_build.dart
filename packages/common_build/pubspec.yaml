@@ -8,10 +8,12 @@ environment:
 
 # Add regular dependencies here.
 dependencies:
+  meta: ">=1.15.0"
   dev_build: ">=1.1.2"
   process_run: ">=1.2.1+1"
   path: ">=1.9.0"
   fs_shim: ">=2.3.3+1"
+  pub_semver: ">=2.1.2"
 
 dev_dependencies:
   lints: ">=5.0.0"

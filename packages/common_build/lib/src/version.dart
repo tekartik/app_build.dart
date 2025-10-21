@@ -1,4 +1,3 @@
-// ignore: depend_on_referenced_packages
 import 'package:pub_semver/pub_semver.dart';
 
 /// Package version text
