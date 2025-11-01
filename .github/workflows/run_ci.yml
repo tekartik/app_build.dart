@@ -30,7 +30,7 @@ jobs:
       - uses: dart-lang/setup-dart@v1.4
         with:
           sdk: ${{ matrix.dart }}
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v6
         with:
           node-version: '20'
       - uses: actions/checkout@v5
