@@ -1,1 +1,2 @@
-export 'src/version_io.dart' show generateVersion, hasGeneratedVersionFile;
+export 'src/common_version_io.dart'
+    show generateVersion, hasGeneratedVersionFile;

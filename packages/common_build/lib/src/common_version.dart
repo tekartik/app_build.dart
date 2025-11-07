@@ -1,6 +1,3 @@
-/// Generated - do not edit
-library;
-
 import 'package:pub_semver/pub_semver.dart';
 
 /// Package version text

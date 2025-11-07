@@ -12,6 +12,8 @@ String _generateContent({
 }) {
   ignoreDependOnReferencedPackages ??= false;
   return '''
+/// Generated - do not edit
+library;
 ${ignoreDependOnReferencedPackages ? '// ignore: depend_on_referenced_packages' : ''}
 import 'package:pub_semver/pub_semver.dart';
 
@@ -23,25 +25,52 @@ final packageVersion = Version.parse(packageVersionText);
 }
 
 /// Generate lib/src/version.dart with a text
-Future<void> generateVersion({String path = '.'}) async {
+Future<void> generateVersion({
+  String path = '.',
+  bool? force,
+  bool? verbose,
+}) async {
+  verbose ??= false;
+  force ??= false;
   var pubspecYamlMap = await pathGetPubspecYamlMap(path);
 
-  var version = pubspecYamlGetVersion(pubspecYamlMap);
+  var version = pubspecYamlGetVersionOrNull(pubspecYamlMap);
+  if (version == null) {
+    // likely a workspace
+    return;
+  }
   var versionPackageName = 'pub_semver';
   var dependencies = pubspecYamlGetDependenciesPackageName(pubspecYamlMap);
   var file = File(join(path, 'lib', 'src', 'version.dart'));
+  if (!file.existsSync() && !force) {
+    if (verbose) {
+      stdout.writeln('Skipping generation of ${file.path} (does not exist)');
+    }
+    return;
+  }
   file.parent.createSync(recursive: true);
   var ignoreDependOnReferencedPackages = !dependencies.contains(
     versionPackageName,
   );
-  await file.writeAsString(
-    stringToIoString(
-      _generateContent(
-        ignoreDependOnReferencedPackages: ignoreDependOnReferencedPackages,
-        version: version,
-      ),
-    ),
+
+  if (!force) {
+    var existingPosixContent = '${file.readAsLinesSync().join('\n')}\n';
+
+    //print('Existing content for ${file.path}:\n$existingPosixContent');
+    if (_contentMatchesVersion(existingPosixContent, version)) {
+      if (verbose) {
+        stdout.writeln('Skipping generation of ${file.path} (up to date)');
+      }
+      return;
+    }
+  }
+  var generatedContent = _generateContent(
+    ignoreDependOnReferencedPackages: ignoreDependOnReferencedPackages,
+    version: version,
   );
+  // print('Generated content for ${file.path}:\n$generatedContent');
+
+  await file.writeAsString(stringToIoString(generatedContent));
   await Shell(
     workingDirectory: path,
   ).run('dart format ${shellArgument(file.path)}');
@@ -52,6 +81,13 @@ bool _checkGeneratedContent(String content) {
   return content.length < 1000 &&
       content.contains('const packageVersionText = ') &&
       content.contains('final packageVersion = ');
+}
+
+bool _contentMatchesVersion(String content, Version version) {
+  return content.contains("const packageVersionText = '$version'") &&
+      content.contains(
+        'final packageVersion = Version.parse(packageVersionText);',
+      );
 }
 
 /// Returns true if the provided content matches the generated version file content
