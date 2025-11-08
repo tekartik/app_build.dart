@@ -41,7 +41,9 @@ Future<void> generateVersion({
   }
   var versionPackageName = 'pub_semver';
   var dependencies = pubspecYamlGetDependenciesPackageName(pubspecYamlMap);
-  var file = File(join(path, 'lib', 'src', 'version.dart'));
+  var file = File(
+    normalize(absolute(join(path, 'lib', 'src', 'version.dart'))),
+  );
   if (!file.existsSync() && !force) {
     if (verbose) {
       stdout.writeln('Skipping generation of ${file.path} (does not exist)');
