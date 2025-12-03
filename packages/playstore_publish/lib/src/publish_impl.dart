@@ -81,8 +81,15 @@ class PublishOptions {
   /// Sometimes necessary for initial publishing.
   final bool? changesNotSentForReview;
 
+  /// Default to completed, might require other status in some cases (draft),
+  final String? releaseStatus;
+
   /// Constructor
-  PublishOptions({this.track, this.changesNotSentForReview});
+  PublishOptions({
+    this.track,
+    this.changesNotSentForReview,
+    this.releaseStatus,
+  });
 }
 
 final _noPublishOptions = PublishOptions(track: _noTrack);
@@ -113,6 +120,13 @@ const publishTrackWearInternal = 'wear:internal';
 /// Wear production track
 const publishTrackWearProduction = 'wear:production';
 
+/// Upload and/or publish a bundle
+///   /// - "draft" : The release's APKs are not being served to users.
+//   /// - "inProgress" : The release's APKs are being served to a fraction of
+//   /// users, determined by 'user_fraction'.
+//   /// - "halted" : The release's APKs will no longer be served to users. Users
+//   /// who already have these APKs are unaffected.
+//   /// - "completed"
 /// manageBundle
 Future manageBundle(
   LocalAab localAab, {

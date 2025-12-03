@@ -46,6 +46,15 @@ Future<AndroidPublisherApi> initPublishApiClient({
 
 /// Android Publisher
 class AndroidPublisher {
+  /// - "draft" : The release's APKs are not being served to users.
+  /// - "completed"
+  static const releaseStatusDraft = 'draft';
+
+  /// - "completed" : The release will have no further changes. Its APKs are
+  /// being served to all users, unless they are eligible to APKs of a more
+
+  static const releaseStatusCompleted = 'completed';
+
   /// Package name
   final String packageName;
 
@@ -131,9 +140,14 @@ class AndroidPublisher {
   Future<void> publishVersionCode({
     required String trackName,
     required int versionCode,
+    String? releaseStatus,
   }) async {
     await writeAppEdit((appEdit) async {
-      await appEdit.publishTrack(trackName, versionCode: versionCode);
+      await appEdit.publishTrack(
+        trackName,
+        versionCode: versionCode,
+        releaseStatus: releaseStatus,
+      );
     });
   }
 
@@ -150,6 +164,7 @@ class AndroidPublisher {
     required String aabPath,
     required String trackName,
     required int versionCode,
+    String? releaseStatus,
     bool? changesNotSentForReview,
   }) async {
     await writeAppEdit((appEdit) async {
@@ -160,7 +175,11 @@ class AndroidPublisher {
         stdout.writeln('versionCode $versionCode already exists');
       }
 
-      await appEdit.publishTrack(trackName, versionCode: versionCode);
+      await appEdit.publishTrack(
+        trackName,
+        versionCode: versionCode,
+        releaseStatus: releaseStatus,
+      );
     }, changesNotSentForReview: changesNotSentForReview);
   }
 }
@@ -234,21 +253,32 @@ class AndroidPublisherAppEdit {
   }
 
   /// Publish track
-  Future publishTrack(String trackName, {required int versionCode}) async {
+  Future publishTrack(
+    String trackName, {
+
+    /// Release status, default to completed
+    String? releaseStatus,
+    required int versionCode,
+  }) async {
+    releaseStatus ??= AndroidPublisher.releaseStatusCompleted;
     var track = Track();
     // track.track = trackName;
     track.releases = [
       TrackRelease()
         ..versionCodes = [versionCode.toString()]
-        ..status = 'completed',
+        ..status = releaseStatus,
     ]; // v2:versionCodes = [versionCode];
     stdout.writeln('updating track: ${track.releases!.first.toJson()}');
     await _api.edits.tracks.update(track, packageName, appEdit.id!, trackName);
   }
 
   /// Publish track
-  Future<int?> getTrackVersionCode(String trackName) async {
+  Future<int?> getTrackVersionCode(
+    String trackName, {
+    String? releaseStatus,
+  }) async {
     //stdout.writeln('getting track: ${track.releases!.first.toJson()}');
+    releaseStatus ??= AndroidPublisher.releaseStatusCompleted;
     var track = await _api.edits.tracks.get(
       packageName,
       appEdit.id!,
@@ -257,7 +287,7 @@ class AndroidPublisherAppEdit {
     var releases = track.releases;
     if (releases != null) {
       for (var release in releases) {
-        if (release.status == 'completed') {
+        if (release.status == releaseStatus) {
           return int.parse(release.versionCodes!.first);
         }
       }
