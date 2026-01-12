@@ -46,11 +46,19 @@ Future<void> flutterWebAppBuildAndServe(
 
 /// Web app options
 class FlutterFirebaseWebAppOptions {
+  /// Project path
   late final String path;
+
+  /// Deploy directory
   final String? deployDir;
+
+  /// Build options
   final FlutterWebAppBuildOptions? buildOptions;
+
+  /// Deploy options
   final FirebaseDeployOptions deployOptions;
 
+  /// Constructor
   FlutterFirebaseWebAppOptions({
     /// default to current directory
     String? path,
@@ -61,6 +69,7 @@ class FlutterFirebaseWebAppOptions {
     this.path = normalize(absolute(path ?? '.'));
   }
 
+  /// Copy with
   FlutterFirebaseWebAppOptions copyWith({
     String? path,
     String? deployDir,
@@ -79,12 +88,15 @@ class FlutterFirebaseWebAppOptions {
 /// Convenient builder.
 class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
   late final FlutterWebAppBuilder _flutterWebAppBuilderOnly;
+
+  /// Options
   final FlutterFirebaseWebAppOptions options;
 
   /// Project path.
   @override
   String get path => options.path;
 
+  /// Constructor
   FlutterFirebaseWebAppBuilder({required this.options}) {
     _flutterWebAppBuilderOnly = FlutterWebAppBuilder(
       options: FlutterWebAppOptions(
@@ -95,8 +107,10 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     );
   }
 
+  /// Target
   String get target => options.deployOptions.target;
 
+  /// Build only
   Future<void> build({FirebaseWebAppActionController? controller}) async {
     await _flutterWebAppBuilderOnly.buildOnly();
     await firebaseWebAppBuildToDeploy(
@@ -105,10 +119,12 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     );
   }
 
+  /// Clean
   Future<void> clean() async {
     await flutterWebAppClean(options.path);
   }
 
+  /// Serve
   Future<void> serve({FirebaseWebAppActionController? controller}) async {
     await firebaseWebAppServe(
       options.path,
@@ -117,6 +133,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     );
   }
 
+  /// Deploy
   Future<void> deploy({FirebaseWebAppActionController? controller}) async {
     await firebaseWebAppDeploy(
       options.path,
@@ -126,6 +143,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     );
   }
 
+  /// Build and serve
   Future<void> buildAndServe({
     FirebaseWebAppActionController? controller,
   }) async {
@@ -133,6 +151,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     await serve(controller: controller);
   }
 
+  /// Build and deploy
   Future<void> buildAndDeploy({
     FirebaseWebAppActionController? controller,
   }) async {

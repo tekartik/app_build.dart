@@ -7,11 +7,18 @@ import 'package:tekartik_common_utils/common_utils_import.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
 
+/// Default firebase hosting deploy directory
 var firebaseDefaultWebDeployDir = join(firebaseDefaultHostingDir, 'public');
+
+/// Default firebase deploy directory
 var firebaseDefaultDeployDir = firebaseDefaultWebDeployDir;
+
+/// Default firebase hosting directory
 var firebaseDefaultHostingDir = join('deploy', 'firebase', 'hosting');
 
+/// Web app deploy options
 class FirebaseDeployOptions implements WebAppDeployOptions {
+  /// Firebase project id
   String projectId;
 
   /// Billable firebase project
@@ -20,6 +27,7 @@ class FirebaseDeployOptions implements WebAppDeployOptions {
   /// Domain
   String target;
 
+  /// Constructor
   FirebaseDeployOptions({
     required this.projectId,
     required this.hostingId,
@@ -131,6 +139,7 @@ Future<void> firebaseWebAppBuildToDeploy(
   );
 }
 
+/// Typo error - Use firebaseWebAppBuildToDeploy
 @Deprecated('Typo error - Use firebaseWebAppBuildToDeploy')
 var firebaseWepAppBuildToDeploy = firebaseWebAppBuildToDeploy;
 
@@ -155,14 +164,17 @@ Future<void> firebaseWebAppServe(
   );
 }
 
+/// Controller for firebase web app actions
 class FirebaseWebAppActionController {
   Shell? _shell;
 
+  /// Cancel the action
   void cancel() {
     _shell?.kill();
   }
 }
 
+/// Firebase web app action controller private extension
 extension FirebaseWebAppActionControllerPrvExt
     on FirebaseWebAppActionController {
   set shell(Shell shell) {
