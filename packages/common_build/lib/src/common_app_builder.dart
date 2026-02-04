@@ -12,4 +12,11 @@ extension CommonAppBuilderExt on CommonAppBuilder {
   Future<void> generateVersion() async {
     await version_io.generateVersion(path: path);
   }
+
+  /// Generate the version if needed (i.e. if a version file is present, matching what we generate)
+  Future<void> generateVersionIfNeeded() async {
+    if (await version_io.hasGeneratedVersionFile(path: path)) {
+      await generateVersion();
+    }
+  }
 }

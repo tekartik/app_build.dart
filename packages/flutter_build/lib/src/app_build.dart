@@ -132,6 +132,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
 
   /// Build
   Future<void> buildOnly() async {
+    await generateVersionIfNeeded();
     var buildOptions = options.buildOptions;
     var shell = _shell;
     // var renderOptions = '';
