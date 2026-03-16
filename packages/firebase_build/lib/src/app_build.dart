@@ -129,6 +129,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     await firebaseWebAppServe(
       options.path,
       options.deployOptions,
+      deployDir: options.deployDir,
       controller: controller,
     );
   }
