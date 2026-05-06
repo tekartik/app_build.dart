@@ -8,11 +8,11 @@ export 'package:dev_build/menu/menu.dart'
         prompt,
         showMenu,
         command,
-        // ignore: deprecated_member_use
+        // ignore: invalid_use_of_do_not_submit_member, deprecated_member_use
         solo_item,
-        // ignore: deprecated_member_use
+        // ignore: invalid_use_of_do_not_submit_member, deprecated_member_use
         solo_menu,
-        // ignore: deprecated_member_use
+        // ignore: invalid_use_of_do_not_submit_member, deprecated_member_use
         devWrite;
 export 'package:dev_build/menu/menu_io.dart'
     show mainMenuConsole, initMenuConsole;
