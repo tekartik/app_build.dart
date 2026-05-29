@@ -15,7 +15,7 @@ class AndroidPublisherClient {
   final AndroidPublisherApi _api;
 
   /// Constructor
-  AndroidPublisherClient({required AndroidPublisherApi api}) : _api = api;
+  AndroidPublisherClient({required this._api});
 
   /// Get publisher for a given package name
   AndroidPublisher getPublisher(String packageName) {

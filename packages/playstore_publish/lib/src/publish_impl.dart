@@ -159,6 +159,7 @@ Future manageBundle(
       stderr.writeln('No service account file found in $serviceAccountFile');
     }
     stderr.writeln(exception);
+    // ignore: only_throw_errors
     throw exception;
   }
   var client = await clientViaServiceAccount(credentials!, _scopes);
@@ -195,6 +196,7 @@ Future manageBundle(
 
     if (found) {
       if (uploadOptions != _noUploadOptions) {
+        // ignore: only_throw_errors
         throw 'Version already uploaded as apk';
       }
     }
@@ -218,11 +220,13 @@ Future manageBundle(
 
     if (found) {
       if (uploadOptions != _noUploadOptions) {
+        // ignore: only_throw_errors
         throw 'Version already uploaded as aab';
       }
     } else {
       if (uploadOptions == _noUploadOptions) {
         // if (devWarning(false)) {
+        // ignore: only_throw_errors
         throw 'Version ${localAab.versionCode} not found';
         // }
       }

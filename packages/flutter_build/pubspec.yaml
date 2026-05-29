@@ -4,12 +4,12 @@ version: 0.2.0
 publish_to: none
 
 environment:
-  sdk: ^3.9.0
+  sdk: ^3.12.0
 
 dependencies:
-  path: ">=1.9.0"
+  path: ">=1.9.1"
   process_run: ">=1.2.1+1"
-  dev_build: ">=1.1.2"
+  dev_build: ">=1.1.7+3"
   tekartik_common_build:
     git:
       url: https://github.com/tekartik/app_build.dart
@@ -27,6 +27,6 @@ dependencies:
       url: https://github.com/tekartik/app_build.dart
       path: packages/web_publish
 dev_dependencies:
-  test: ">=1.24.0"
+  test: ">=1.31.0"
 resolution: workspace
 
