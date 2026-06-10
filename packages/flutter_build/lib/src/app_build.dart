@@ -191,7 +191,8 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     if (deployer == null) {
       throw StateError('Missing deployer');
     }
-    await deployer!.deploy(path: options.deployDir);
+    var deployDir = _fixFolder(path, options.deployDir);
+    await deployer!.deploy(path: deployDir);
   }
 
   /// Serve build
