@@ -87,6 +87,8 @@ class FlutterFirebaseWebAppOptions {
 
 /// Convenient builder.
 class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
+  /// Web app builder
+  FlutterWebAppBuilder get webAppBuilder => _flutterWebAppBuilderOnly;
   late final FlutterWebAppBuilder _flutterWebAppBuilderOnly;
 
   /// Options
@@ -150,6 +152,11 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
   }) async {
     await build(controller: controller);
     await serve(controller: controller);
+  }
+
+  /// Copy built
+  Future<void> copyBuildToDeploy() async {
+    await _flutterWebAppBuilderOnly.buildToDeploy();
   }
 
   /// Build and deploy

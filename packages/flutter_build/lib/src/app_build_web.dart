@@ -3,6 +3,7 @@ import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
 import 'package:tekartik_common_build/common_app_builder.dart';
+import 'package:tekartik_common_build/formatter.dart' as f;
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_flutter_build/src/controller.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
@@ -157,12 +158,31 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     await shell.run('flutter build web$wasmOptions$targetOptions');
   }
 
+  File? _findJsFile() {
+    var file = File(join(path, 'build', 'web', 'main.dart.js'));
+    if (file.existsSync()) return file;
+    var dir = Directory(join(path, 'build', 'web'));
+    if (!dir.existsSync()) return null;
+    for (var entity in dir.listSync(recursive: true)) {
+      if (entity is File && entity.path.endsWith('main.dart.js')) {
+        return entity;
+      }
+    }
+    return null;
+  }
+
+  /// Copy to deploy using deploy.yaml
+  Future<void> buildToDeploy() async {
+    await _webAppBuildToDeploy();
+  }
+
   /// Copy to deploy using deploy.yaml
   Future<void> _webAppBuildToDeploy() async {
     var buildFolder = join(path, 'build', 'web');
     var deployDir = _fixFolder(path, options.deployDir);
 
     var deployFile = File(join(buildFolder, 'deploy.yaml'));
+    await reportJsSize();
     // ignore: avoid_slow_async_io
     if (!await deployFile.exists()) {
       throw StateError('Missing deploy.yaml file ($deployFile)');
@@ -173,6 +193,12 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       src: Directory(buildFolder),
       dst: Directory(deployDir),
     );
+  }
+
+  /// Report js size
+  Future<void> reportJsSize() async {
+    var file = _findJsFile();
+    stdout.writeln('main.dart.js (${f.formatSize(file?.lengthSync() ?? 0)})');
   }
 
   /// Clean

@@ -64,6 +64,9 @@ void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
   item('generateVersion', () async {
     await builder.generateVersion();
   });
+  item('Js size', () async {
+    await builder.reportJsSize();
+  });
 }
 
 /// Menu

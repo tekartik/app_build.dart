@@ -19,4 +19,6 @@ extension CommonAppBuilderExt on CommonAppBuilder {
       await generateVersion();
     }
   }
+
+  ///
 }

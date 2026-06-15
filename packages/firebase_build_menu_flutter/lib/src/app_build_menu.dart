@@ -4,6 +4,7 @@ import 'package:path/path.dart';
 // ignore: depend_on_referenced_packages
 import 'package:tekartik_firebase_build/app_build.dart';
 import 'package:tekartik_firebase_build/firebase_deploy.dart';
+import 'package:tekartik_flutter_build/app_build_menu.dart';
 
 void menuFirebaseWebAppBuilderContent({
   required FlutterFirebaseWebAppBuilder builder,
@@ -53,7 +54,10 @@ void menuFirebaseWebAppBuilderContent({
     cancel();
     await builder.clean();
   });
-  item('generateVersion', () async {});
+
+  menu('web', () {
+    menuFlutterWebAppBuilderContent(builder: builder.webAppBuilder);
+  });
 }
 
 void menuFirebaseAppContent({

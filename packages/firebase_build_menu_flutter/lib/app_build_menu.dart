@@ -16,6 +16,7 @@ export 'package:dev_build/menu/menu.dart'
         devWrite;
 export 'package:dev_build/menu/menu_io.dart'
     show mainMenuConsole, initMenuConsole;
+export 'package:tekartik_build_flutter/flutter_devices.dart';
 export 'package:tekartik_firebase_build/app_build.dart';
 export 'package:tekartik_firebase_build/firebase_deploy.dart';
 
