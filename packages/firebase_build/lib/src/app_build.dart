@@ -115,10 +115,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
   /// Build only
   Future<void> build({FirebaseWebAppActionController? controller}) async {
     await _flutterWebAppBuilderOnly.buildOnly();
-    await firebaseWebAppBuildToDeploy(
-      options.path,
-      deployDir: options.deployDir,
-    );
+    await _flutterWebAppBuilderOnly.buildToDeploy();
   }
 
   /// Clean
@@ -138,6 +135,8 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
 
   /// Deploy
   Future<void> deploy({FirebaseWebAppActionController? controller}) async {
+    await _flutterWebAppBuilderOnly.buildToDeploy();
+
     await firebaseWebAppDeploy(
       options.path,
       options.deployOptions,
