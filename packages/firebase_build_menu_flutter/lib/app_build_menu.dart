@@ -19,6 +19,6 @@ export 'package:dev_build/menu/menu_io.dart'
 export 'package:tekartik_build_flutter/flutter_devices.dart';
 export 'package:tekartik_firebase_build/app_build.dart';
 export 'package:tekartik_firebase_build/firebase_deploy.dart';
-
+export 'package:tekartik_flutter_build/app_build_menu.dart';
 export 'src/app_build_menu.dart'
     show menuFirebaseAppContent, menuFirebaseWebAppBuilderContent;
