@@ -50,6 +50,7 @@ class FlutterFirebaseWebAppOptions {
   late final String path;
 
   /// Deploy directory
+  /// Default to deploy/firebase/hosting/public [firebaseDefaultWebDeployDir]
   final String? deployDir;
 
   /// Build options
@@ -104,7 +105,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
       options: FlutterWebAppOptions(
         buildOptions: options.buildOptions,
         path: options.path,
-        deployDir: options.deployDir,
+        deployDir: options.deployDir ?? firebaseDefaultWebDeployDir,
       ),
     );
   }

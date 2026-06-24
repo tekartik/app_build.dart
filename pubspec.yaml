@@ -12,3 +12,4 @@ workspace:
   - packages/gcr_build
   - packages/repo_support
   - packages/web_publish
+  - example/demo_flutter_app

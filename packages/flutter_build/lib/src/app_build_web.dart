@@ -171,6 +171,15 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     return null;
   }
 
+  var _infoShownOnce = false;
+  void _showInfoOnce() {
+    if (_infoShownOnce) return;
+    _infoShownOnce = true;
+    stdout.writeln('Dir: $path');
+    var deployDir = _fixFolder(path, options.deployDir);
+    stdout.writeln('Deploy: $deployDir');
+  }
+
   /// Copy to deploy using deploy.yaml
   Future<void> buildToDeploy() async {
     await _webAppBuildToDeploy();
@@ -178,6 +187,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
 
   /// Copy to deploy using deploy.yaml
   Future<void> _webAppBuildToDeploy() async {
+    _showInfoOnce();
     var buildFolder = join(path, 'build', 'web');
     var deployDir = _fixFolder(path, options.deployDir);
 

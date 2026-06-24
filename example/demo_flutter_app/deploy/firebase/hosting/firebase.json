@@ -1,0 +1,94 @@
+{
+  "hosting": [
+    {
+      "target": "dev",
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*",
+          "headers": [
+            {
+              "key": "Cross-Origin-Embedder-Policy",
+              "value": "unsafe-none"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "restrict-properties"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "prod",
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*",
+          "headers": [
+            {
+              "key": "Cross-Origin-Embedder-Policy",
+              "value": "unsafe-none"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "restrict-properties"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "prodx",
+      "public": "public",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*",
+          "headers": [
+            {
+              "key": "Cross-Origin-Embedder-Policy",
+              "value": "unsafe-none"
+            },
+            {
+              "key": "Cross-Origin-Opener-Policy",
+              "value": "restrict-properties"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
