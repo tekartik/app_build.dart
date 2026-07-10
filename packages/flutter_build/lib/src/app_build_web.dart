@@ -156,6 +156,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       targetOptions = ' --target ${buildOptions!.target}';
     }
     await shell.run('flutter build web$wasmOptions$targetOptions');
+    await reportJsSize();
   }
 
   File? _findJsFile() {
@@ -185,6 +186,13 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     await _webAppBuildToDeploy();
   }
 
+  /// Current configuration file
+  Future<bool> hasDeployYamlFile() async {
+    var buildFolder = join(path, 'build', 'web');
+    var deployFile = File(join(buildFolder, 'deploy.yaml'));
+    return deployFile.existsSync();
+  }
+
   /// Copy to deploy using deploy.yaml
   Future<void> _webAppBuildToDeploy() async {
     _showInfoOnce();
@@ -192,7 +200,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     var deployDir = _fixFolder(path, options.deployDir);
 
     var deployFile = File(join(buildFolder, 'deploy.yaml'));
-    await reportJsSize();
+
     // ignore: avoid_slow_async_io
     if (!await deployFile.exists()) {
       throw StateError('Missing deploy.yaml file ($deployFile)');

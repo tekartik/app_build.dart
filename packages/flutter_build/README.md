@@ -1,6 +1,6 @@
-# tekartik_firebase_build.dart
+# tekartik_flutter_build.dart
 
-Firebase build helper
+Firebase build and deploy helpers
 
 ## Setup
 

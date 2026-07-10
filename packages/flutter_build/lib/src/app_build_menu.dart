@@ -34,7 +34,10 @@ void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
 
   item('build', () async {
     cancel();
-    await builder.build();
+    await builder.buildOnly();
+    if (await builder.hasDeployYamlFile()) {
+      await builder.buildToDeploy();
+    }
   });
 
   item('run', () async {
