@@ -126,6 +126,8 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
 
   /// Serve
   Future<void> serve({FirebaseWebAppActionController? controller}) async {
+    await _flutterWebAppBuilderOnly.buildToDeploy();
+
     await firebaseWebAppServe(
       options.path,
       options.deployOptions,
