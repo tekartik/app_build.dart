@@ -12,6 +12,7 @@ String _fixFolder(String path, String folder) {
   if (isAbsolute(folder)) {
     return folder;
   }
+
   return join(path, folder);
 }
 
@@ -172,6 +173,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       targetOptions = ' --target ${buildOptions!.target}';
     }
     await shell.run('flutter build web$wasmOptions$targetOptions');
+
     await reportJsSize();
   }
 
@@ -281,12 +283,14 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   /// Runs [build] followed by [serve].
   Future<void> buildAndServe() async {
     await build();
+
     await serve();
   }
 
   /// Runs [build] followed by [deploy].
   Future<void> buildAndDeploy() async {
     await build();
+
     await deploy();
   }
 }

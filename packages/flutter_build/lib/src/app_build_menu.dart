@@ -63,13 +63,16 @@ void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
     cancel();
     await builder.buildAndServe();
   });
+
   item('clean', () async {
     cancel();
     await builder.clean();
   });
+
   item('generateVersion', () async {
     await builder.generateVersion();
   });
+
   item('Js size', () async {
     await builder.reportJsSize();
   });
@@ -111,6 +114,7 @@ void menuFlutterWebAppContent({required List<FlutterWebAppBuilder> builders}) {
           await builder.buildAndDeploy();
         }
       });
+
       item('deploy', () async {
         cancel();
         for (var builder in builders) {

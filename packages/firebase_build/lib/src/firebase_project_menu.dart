@@ -14,6 +14,7 @@ void menuFirebaseProjectBuilderContent({
 
   enter(() async {
     write('Firebase project path: ${absolute(path)}');
+
     write('ProjectId: $projectId');
     var functions = builder.options.functions;
     if (functions != null) {

@@ -94,16 +94,21 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
     var futures = [
       shellStdioLinesGrouper.runZoned(() async {
         await generateVersion();
+
         await build();
+
         await dockerTagImage();
       }),
       shellStdioLinesGrouper.runZoned(() async {
         await configureDockerAuth();
+
         await createArtifactRepository();
       }),
     ];
     await Future.wait(futures);
+
     await dockerPush();
+
     await deploy();
   }
 

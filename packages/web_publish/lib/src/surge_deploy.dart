@@ -29,6 +29,7 @@ class SurgeWebAppDeployer implements WebAppDeployer {
     if (deployPath == null) {
       throw StateError('Missing deploy path');
     }
+
     await Shell().cd(deployPath).run('surge . --domain ${options.domain}');
     stdout.writeln('Deployed to https://${options.domain}');
   }

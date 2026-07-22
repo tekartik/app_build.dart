@@ -36,6 +36,7 @@ Future<AndroidPublisherClient> initAndroidPublisherClient({
   required Map serviceAccount,
 }) async {
   var api = await initPublishApiClient(serviceAccount: serviceAccount);
+
   return AndroidPublisherClient(api: api);
 }
 
@@ -93,6 +94,7 @@ class AndroidPublisher {
   Future<AndroidPublisherAppEdit> newAppEdit() async {
     var appEdit = AppEdit();
     appEdit = await _api.edits.insert(appEdit, packageName);
+
     return AndroidPublisherAppEdit(appEdit: appEdit, publisher: this);
   }
 

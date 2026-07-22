@@ -7,6 +7,7 @@ String _fixFolder(String path, String folder) {
   if (isAbsolute(folder)) {
     return normalize(folder);
   }
+
   return normalize(absolute(join(path, folder)));
 }
 

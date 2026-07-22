@@ -91,6 +91,7 @@ class AppStorePublisher {
     } else if (credentials is AppStoreCredentialsApiKeyIssuerId) {
       return ' --apiKey ${shellArgument(credentials.apiKey)} --apiIssuer ${shellArgument(credentials.issuerId)}';
     }
+
     throw UnsupportedError('Unsupported credentials');
   }
 
@@ -132,6 +133,7 @@ class AppStorePublisher {
   /// [ipaPath].
   Future<void> validateAndUploadIosApp({required String ipaPath}) async {
     await validateIosApp(ipaPath: ipaPath);
+
     await uploadIosApp(ipaPath: ipaPath);
   }
 

@@ -22,6 +22,7 @@ Future<void> flutterWebAppBuildAndDeploy(
   String? deployDir,
 }) async {
   await flutterWebAppBuild(directory);
+
   await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
   await firebaseWebAppDeploy(
     directory,
@@ -42,6 +43,7 @@ Future<void> flutterWebAppBuildAndServe(
   String? deployDir,
 }) async {
   await flutterWebAppBuild(directory);
+
   await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
   await firebaseWebAppServe(
     directory,
@@ -172,6 +174,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     FirebaseWebAppActionController? controller,
   }) async {
     await build(controller: controller);
+
     await serve(controller: controller);
   }
 
@@ -186,6 +189,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     FirebaseWebAppActionController? controller,
   }) async {
     await build(controller: controller);
+
     await deploy(controller: controller);
   }
 }
