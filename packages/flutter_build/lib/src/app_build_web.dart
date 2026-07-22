@@ -15,54 +15,57 @@ String _fixFolder(String path, String folder) {
   return join(path, folder);
 }
 
-/// Web rendered (html deprecated
+/// Which web renderer `flutter build web` should use, for
+/// [FlutterWebAppBuildOptions.renderer].
 enum FlutterWebRenderer {
-  /// Deprecated
+  /// The HTML renderer. No longer supported by the Flutter tool.
   @Deprecated('no longer supported')
   html,
 
-  /// Default
+  /// The CanvasKit renderer (the default).
   canvasKit,
 }
 
-/// Build options.
+/// Options controlling `flutter build web`, for
+/// [FlutterWebAppOptions.buildOptions].
 class FlutterWebAppBuildOptions {
-  /// Target
+  /// The main entry-point file of the application, passed as `--target`.
   ///
-  /// The main entry-point file of the application, as run on the device.
-  /// If the "--target" option is omitted, but a file name is provided on the command line, then that is used
-  /// instead.
-  ///
-  /// (defaults to "lib/main.dart")
+  /// If omitted (`null`), Flutter defaults to `lib/main.dart`.
   final String? target;
 
-  /// Renderer
+  /// Web renderer to build with, or `null` for the Flutter tool's default.
   final FlutterWebRenderer? renderer;
 
-  /// Compile as wasm
+  /// Whether to compile to WebAssembly (passes `--wasm`). Defaults to
+  /// `false` when `null`.
   final bool? wasm;
 
-  /// Build options.
+  /// Creates build options with the given [renderer], [wasm] flag and
+  /// [target] entry point, each defaulting to `null` (tool defaults).
   FlutterWebAppBuildOptions({this.renderer, this.wasm, this.target});
 }
 
-/// Web app options
+/// Options for building, serving and deploying a Flutter web app, used by
+/// [FlutterWebAppBuilder].
 class FlutterWebAppOptions {
-  /// Project path
+  /// Absolute, normalized path to the Flutter project.
   late final String path;
 
-  /// Deploy dir
+  /// Directory the built web app is copied to before deploy/serve.
   late final String deployDir;
 
-  /// Serve web port
+  /// Local port used by [FlutterWebAppBuilder.run] and
+  /// [FlutterWebAppBuilder.serve].
   late final int webPort;
 
-  /// Build options
+  /// Options controlling `flutter build web`, or `null` for defaults.
   final FlutterWebAppBuildOptions? buildOptions;
 
-  /// Web app options
+  /// Creates options for the Flutter project at [path] (defaults to the
+  /// current directory). [deployDir] defaults to `webAppDeployDirDefault`
+  /// and [webPort] to `webAppServeWebPortDefault` when omitted.
   FlutterWebAppOptions({
-    /// default to current directory
     String? path,
     String? deployDir,
     int? webPort,
@@ -73,7 +76,8 @@ class FlutterWebAppOptions {
     this.webPort = webPort ?? webAppServeWebPortDefault;
   }
 
-  /// Copy
+  /// Returns a copy of these options, overriding [path], [deployDir]
+  /// and/or [buildOptions] while keeping the rest unchanged.
   FlutterWebAppOptions copyWith({
     String? path,
     String? deployDir,
@@ -87,25 +91,32 @@ class FlutterWebAppOptions {
   }
 }
 
-/// Convenient builder.
+/// Builds, serves and deploys a Flutter web app: wraps `flutter build web`
+/// / `flutter run` / a local static server, plus copy-to-deploy and
+/// optional [WebAppDeployer] deployment.
 class FlutterWebAppBuilder implements CommonAppBuilder {
-  /// Information target name (dev, prod...)
+  /// Informational build/deploy target name (e.g. `'dev'`, `'prod'`), not
+  /// passed to Flutter itself; purely for the caller's own bookkeeping.
   final String? target;
 
-  /// Options
+  /// Options controlling build/serve/deploy behavior.
   final FlutterWebAppOptions options;
 
-  /// Deployer
+  /// Deployer used by [deploy], or `null` if this builder doesn't support
+  /// deploying (calling [deploy] then throws).
   final WebAppDeployer? deployer;
 
-  /// Optional controller
+  /// If set, shell commands are run through this controller (letting
+  /// callers observe/cancel them) instead of a plain [Shell].
   BuildShellController? controller;
 
-  /// Project path.
+  /// Absolute path to the Flutter project, i.e. `options.path`.
   @override
   String get path => options.path;
 
-  /// Constructor
+  /// Creates a builder for [options] (defaults to a fresh
+  /// [FlutterWebAppOptions] for the current directory), optionally with a
+  /// [deployer], [controller] and informational [target] name.
   FlutterWebAppBuilder({
     FlutterWebAppOptions? options,
     this.deployer,
@@ -113,7 +124,8 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     this.target,
   }) : options = options ?? FlutterWebAppOptions();
 
-  /// CopyWith
+  /// Returns a copy of this builder, overriding [controller] while keeping
+  /// [options], [target] and [deployer] unchanged.
   FlutterWebAppBuilder copyWith({BuildShellController? controller}) {
     return FlutterWebAppBuilder(
       controller: controller ?? this.controller,
@@ -125,13 +137,17 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
 
   Shell get _shell => controller?.shell ?? Shell(workingDirectory: path);
 
-  /// Build
+  /// Runs [buildOnly] then copies the output to the deploy directory (see
+  /// [buildToDeploy]).
   Future<void> build() async {
     await buildOnly();
     await _webAppBuildToDeploy();
   }
 
-  /// Build
+  /// Runs `flutter build web` (regenerating the version file first if
+  /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm` and
+  /// `target` settings, then logs the built JS bundle size (see
+  /// [reportJsSize]).
   Future<void> buildOnly() async {
     await generateVersionIfNeeded();
     var buildOptions = options.buildOptions;
@@ -181,12 +197,16 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     stdout.writeln('Deploy: $deployDir');
   }
 
-  /// Copy to deploy using deploy.yaml
+  /// Copies the already-built web app from `build/web` into the deploy
+  /// directory, following the copy rules in that folder's `deploy.yaml`.
+  /// Does not rebuild.
   Future<void> buildToDeploy() async {
     await _webAppBuildToDeploy();
   }
 
-  /// Current configuration file
+  /// Checks whether `build/web/deploy.yaml` exists, i.e. whether the
+  /// project has been built at least once with a deploy configuration
+  /// present.
   Future<bool> hasDeployYamlFile() async {
     var buildFolder = join(path, 'build', 'web');
     var deployFile = File(join(buildFolder, 'deploy.yaml'));
@@ -213,24 +233,29 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     );
   }
 
-  /// Report js size
+  /// Logs the size of the built `main.dart.js` bundle (searched for under
+  /// `build/web`) to stdout, or `0` if it can't be found.
   Future<void> reportJsSize() async {
     var file = _findJsFile();
     stdout.writeln('main.dart.js (${f.formatSize(file?.lengthSync() ?? 0)})');
   }
 
-  /// Clean
+  /// Runs `flutter clean` in the project directory (see
+  /// [flutterWebAppClean]).
   Future<void> clean() async {
     await flutterWebAppClean(options.path);
   }
 
-  /// Run (serve)
+  /// Runs the app in Chrome via `flutter run -d chrome`, on
+  /// [FlutterWebAppOptions.webPort].
   Future<void> run() async {
     var shell = _shell;
     await shell.run('flutter run -d chrome --web-port ${options.webPort}');
   }
 
-  /// Deploy
+  /// Deploys the contents of the deploy directory using [deployer].
+  ///
+  /// Throws a [StateError] if this builder has no [deployer].
   Future<void> deploy() async {
     if (deployer == null) {
       throw StateError('Missing deployer');
@@ -239,7 +264,10 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     await deployer!.deploy(path: deployDir);
   }
 
-  /// Serve build
+  /// Serves the deploy directory locally over HTTP on
+  /// [FlutterWebAppOptions.webPort], using `dhttpd` (activating it first
+  /// if needed) with cross-origin isolation headers set for WASM/threaded
+  /// support.
   Future<void> serve() async {
     await checkAndActivatePackage('dhttpd');
     stdout.writeln('http://localhost:${options.webPort}');
@@ -250,20 +278,20 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     );
   }
 
-  /// Build and serve
+  /// Runs [build] followed by [serve].
   Future<void> buildAndServe() async {
     await build();
     await serve();
   }
 
-  /// Build and deploy
+  /// Runs [build] followed by [deploy].
   Future<void> buildAndDeploy() async {
     await build();
     await deploy();
   }
 }
 
-/// Clean a web app
+/// Runs `flutter clean` in [directory].
 Future<void> flutterWebAppClean(String directory) async {
   var shell = Shell().cd(directory);
   await shell.run('flutter clean');

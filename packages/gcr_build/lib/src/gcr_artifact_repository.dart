@@ -11,23 +11,26 @@
 //     'sizeBytes': '550708161',
 //     'updateTime': '2024-10-04T18:24:41.972377Z'
 //   };
-/// Google cloud artifact repository
+/// A Google Cloud Artifact Registry repository, as returned by the Google
+/// Cloud API (see [GcrArtifactRepository.fromJson]).
 class GcrArtifactRepository {
-  /// Name
+  /// Fully-qualified resource name, e.g.
+  /// `'projects/my_project/locations/my_region/repositories/my_repo'`.
   final String name;
 
   List<String> get _parts => name.split('/');
 
-  /// String repo
+  /// Repository ID, the last segment of [name].
   String get repository => _parts.last;
 
-  /// String region
+  /// Region (location) ID, parsed from [name].
   String get region => _parts[3];
 
-  /// String project
+  /// Project ID, parsed from [name].
   String get project => _parts[1];
 
-  /// Constructor
+  /// Creates a repository from a decoded JSON [map] (as returned by the
+  /// Google Cloud Artifact Registry API), reading its `name` field.
   GcrArtifactRepository.fromJson(Map map) : name = map['name'] as String;
 
   @override

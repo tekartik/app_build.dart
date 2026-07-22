@@ -2,7 +2,9 @@ import 'package:dev_build/menu/menu.dart';
 import 'package:path/path.dart';
 import 'firebase_project.dart';
 
-/// Menu content for a single [FirebaseProjectBuilder].
+/// Registers dev-menu items to serve emulators, deploy functions,
+/// Firestore rules/indexes, or everything, for the given [builder], plus a
+/// `'cancel action'` item to abort whichever action is running.
 void menuFirebaseProjectBuilderContent({
   required FirebaseProjectBuilder builder,
 }) {
@@ -53,7 +55,12 @@ void menuFirebaseProjectBuilderContent({
   });
 }
 
-/// Menu content for a list of [FirebaseProjectBuilder]s.
+/// Registers dev-menu items for each project in [builders] (see
+/// [menuFirebaseProjectBuilderContent]).
+///
+/// If [builders] has 2 or more entries, each gets its own submenu named
+/// after its project ID; with exactly one entry, its items are added
+/// directly (no submenu); with none, nothing is added.
 void menuFirebaseProjectContent({
   required List<FirebaseProjectBuilder> builders,
 }) {

@@ -24,7 +24,16 @@ final packageVersion = Version.parse(packageVersionText);
 ''';
 }
 
-/// Generate lib/src/version.dart with a text
+/// Generates `lib/src/version.dart` for the package rooted at [path]
+/// (defaults to `'.'`), exposing its `pubspec.yaml` version as
+/// `packageVersionText`/`packageVersion` constants, then runs `dart
+/// format` on the generated file.
+///
+/// Does nothing if [path]'s `pubspec.yaml` has no version (e.g. a
+/// workspace root), or — unless [force] is `true` (defaults to `false`) —
+/// if `lib/src/version.dart` doesn't already exist, or its content already
+/// matches the current version. If [verbose] is `true` (defaults to
+/// `false`), skip reasons are logged to stdout.
 Future<void> generateVersion({
   String path = '.',
   bool? force,
@@ -110,7 +119,11 @@ String generateVersionFileContent({
   );
 }
 
-/// Returns true if lib/src/version.dart has been generated
+/// Checks whether `lib/src/version.dart` exists under [path] (defaults to
+/// `'.'`) and looks like it was produced by [generateVersion].
+///
+/// Returns `true` if the file exists and matches the expected generated
+/// format, `false` otherwise.
 Future<bool> hasGeneratedVersionFile({String path = '.'}) async {
   var file = File(join(path, 'lib', 'src', 'version.dart'));
   if (!file.existsSync()) {

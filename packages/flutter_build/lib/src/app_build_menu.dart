@@ -5,7 +5,10 @@ import 'package:tekartik_flutter_build/app_build.dart';
 
 import 'controller.dart';
 
-/// Single builder menu
+/// Registers dev-menu items (build, run, serve, deploy, clean, generate
+/// version, report JS size, and a `'cancel current build/server'` item)
+/// for the given [builder]. `'build and deploy'` and `'deploy'` items are
+/// only added when [builder] has a deployer.
 void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
   //shellDebug = devWarning(true);
   var path = builder.options.path;
@@ -72,7 +75,14 @@ void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
   });
 }
 
-/// Menu
+/// Registers dev-menu items for each project in [builders] (see
+/// [menuFlutterWebAppBuilderContent]).
+///
+/// If [builders] has 2 or more entries, each gets its own submenu named
+/// after its [FlutterWebAppBuilder.target], plus an `'all'` submenu with
+/// combined build/build-and-deploy/deploy/clean items that run across all
+/// of them; with exactly one entry, its items are added directly (no
+/// submenu).
 void menuFlutterWebAppContent({required List<FlutterWebAppBuilder> builders}) {
   if (builders.length >= 2) {
     for (var builder in builders) {

@@ -13,35 +13,41 @@ void _log(Object? message) {
   }
 }
 
-/// Google cloud project
+/// A Docker Compose project deployed to Google Cloud Run, described by
+/// [options]. Operations live on [GcrProjectExt].
 class GcrProject {
-  /// If verbose logging is done
+  /// Whether shell commands log their output.
   final bool verbose;
 
-  /// Path to the project
+  /// Working directory containing the project's `docker-compose` file.
   final String path;
 
-  /// Options
+  /// Google Cloud project/service/image configuration.
   final GcrProjectOptions options;
 
-  /// Constructor
+  /// Creates a project rooted at [path] (defaults to the current
+  /// directory), described by [options]. [verbose] defaults to `false`.
   GcrProject({this.path = '.', required this.options, bool? verbose})
     : verbose = verbose ?? false;
 }
 
-/// Helpers
+/// Build, run, and Google Cloud Run deploy operations available on a
+/// [GcrProject].
 extension GcrProjectExt on GcrProject {
   Shell get _shell =>
       Shell(workingDirectory: path, verbose: verbose, commandVerbose: true);
 
-  /// Configure docker auth, need after login once per region
+  /// Configures `docker` to authenticate against Artifact Registry for
+  /// [GcrProjectOptions.region], via `gcloud auth configure-docker`. Needed
+  /// once per region after `gcloud auth login`.
   Future<void> configureDockerAuth() async {
     await _shell.run('''
     gcloud auth configure-docker ${options.region}-docker.pkg.dev
     ''');
   }
 
-  /// Tag the image before pushing
+  /// Tags the local [GcrProjectOptions.image] with its full Artifact
+  /// Registry path, in preparation for [dockerPush].
   Future<void> dockerTagImage() async {
     await _shell.run('''
   docker tag ${options.image} \\
@@ -49,7 +55,8 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
   ''');
   }
 
-  /// Rebuild and run
+  /// Kills any running containers ([kill]), then rebuilds and runs the
+  /// project via `docker compose up --build --pull never`.
   Future<void> buildAndRun() async {
     try {
       await kill();
@@ -71,14 +78,18 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
     }
   }
 
-  /// Rebuild and run
+  /// Builds the project's Docker image via `docker compose build`, without
+  /// running it.
   Future<void> build() async {
     await _shell.run('''
     docker compose build
     ''');
   }
 
-  /// Full build and deploy
+  /// Runs the full pipeline: generates the version file, builds and tags
+  /// the image, configures Docker auth, creates the Artifact Registry
+  /// repository if needed (in parallel with the build/tag steps), then
+  /// pushes ([dockerPush]) and deploys ([deploy]) the image.
   Future<void> buildAndDeploy() async {
     var futures = [
       shellStdioLinesGrouper.runZoned(() async {
@@ -96,7 +107,8 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
     await deploy();
   }
 
-  /// List existing artifact repositories
+  /// Lists all Artifact Registry repositories in
+  /// [GcrProjectOptions.projectId], via `gcloud artifacts repositories list`.
   Future<List<GcrArtifactRepository>> listArtifactRepositories() async {
     var result = await _shell.run('''
     gcloud artifacts repositories list --project=${options.projectId} --format json
@@ -108,7 +120,15 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
         .toList();
   }
 
-  /// Create artifact repository
+  /// Creates the Artifact Registry repository named
+  /// [GcrProjectOptions.name] (with [GcrProjectOptions.description] if
+  /// set).
+  ///
+  /// If [force] is `false` (the default), first checks (via
+  /// [listArtifactRepositories]) whether a repository with that name
+  /// already exists and, if so, does nothing instead of creating it. If
+  /// [force] is `true`, that check is skipped and creation is always
+  /// attempted.
   Future<void> createArtifactRepository({bool? force}) async {
     force ??= false;
     if (!force) {
@@ -126,7 +146,8 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
     ''');
   }
 
-  /// Terminate/kill
+  /// Kills the project's running containers via `docker compose kill`, if
+  /// any are running.
   Future<void> kill() async {
     var processIds = await dockerComposeGetRunningProcessIds();
     if (processIds.isNotEmpty) {
@@ -139,14 +160,18 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
   String get _dockerImage =>
       '${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.image}';
 
-  /// Push the docker image
+  /// Pushes the tagged image (see [dockerTagImage]) to Artifact Registry
+  /// via `docker push`.
   Future<void> dockerPush() async {
     await _shell.run('''
   docker push ${shellArgument(_dockerImage)}
   ''');
   }
 
-  /// Deploy the docker image (must be pushed first)
+  /// Deploys the image to Cloud Run as [GcrProjectOptions.serviceName],
+  /// allowing unauthenticated access, via `gcloud run deploy`.
+  ///
+  /// The image must already have been pushed (see [dockerPush]).
   Future<void> deploy() async {
     await _shell.cloneWithOptions(_shell.options.clone(verbose: true)).run('''
         gcloud run deploy ${options.serviceName} \\

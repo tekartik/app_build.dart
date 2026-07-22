@@ -2,11 +2,13 @@ import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:tekartik_common_build/common_app_builder.dart';
 
-/// Action controller for firebase project commands.
+/// Lets callers cancel an in-progress [FirebaseProjectBuilder] action
+/// (deploy, serve, etc).
 class FirebaseProjectActionController {
   Shell? _shell;
 
-  /// Cancel the action
+  /// Kills the underlying `firebase` shell command, aborting the action it
+  /// was passed to.
   void cancel() {
     _shell?.kill();
   }
@@ -21,18 +23,25 @@ extension FirebaseProjectActionControllerPrvExt
   }
 }
 
-/// Firebase project options
+/// Identifies a Firebase project and its default deploy functions, used by
+/// [FirebaseProjectBuilder].
 class FirebaseProjectOptions {
-  /// Firebase project ID
+  /// Firebase project ID (used with `firebase --project`).
   final String projectId;
 
-  /// Project path (working directory containing firebase.json)
+  /// Absolute, normalized working directory containing `firebase.json`.
   late final String path;
 
-  /// Functions to deploy, e.g. ['commanddartv2dev', 'callcommanddartv2dev']
+  /// Default function names to deploy when
+  /// [FirebaseProjectBuilder.deployFunctions] is called without its own
+  /// `functions` argument, e.g. `['commanddartv2dev',
+  /// 'callcommanddartv2dev']`. If `null`/empty, all functions are
+  /// deployed.
   final List<String>? functions;
 
-  /// Constructor
+  /// Creates options for [projectId], rooted at [path] (defaults to the
+  /// current directory), with [functions] as the default deploy target
+  /// list (defaults to `null`, meaning all functions).
   FirebaseProjectOptions({
     required this.projectId,
     String? path,
@@ -41,7 +50,8 @@ class FirebaseProjectOptions {
     this.path = normalize(absolute(path ?? '.'));
   }
 
-  /// Copy with
+  /// Returns a copy of these options, overriding [projectId], [path]
+  /// and/or [functions] while keeping the rest unchanged.
   FirebaseProjectOptions copyWith({
     String? projectId,
     String? path,
@@ -55,18 +65,22 @@ class FirebaseProjectOptions {
   }
 }
 
-/// Firebase project builder helper.
+/// Runs `firebase` CLI deploy/serve commands for the project described by
+/// [options].
 class FirebaseProjectBuilder implements CommonAppBuilder {
-  /// Project options
+  /// The project this builder targets.
   final FirebaseProjectOptions options;
 
   @override
   String get path => options.path;
 
-  /// Constructor
+  /// Creates a builder for the project described by [options].
   FirebaseProjectBuilder({required this.options});
 
-  /// Deploy firestore rules
+  /// Deploys Firestore security rules via
+  /// `firebase deploy --only firestore:rules`. If [controller] is given,
+  /// it's wired to the underlying shell so
+  /// [FirebaseProjectActionController.cancel] can abort the deploy.
   Future<void> deployFirestoreRules({
     FirebaseProjectActionController? controller,
   }) async {
@@ -77,7 +91,10 @@ class FirebaseProjectBuilder implements CommonAppBuilder {
     );
   }
 
-  /// Deploy firestore indexes
+  /// Deploys Firestore indexes via
+  /// `firebase deploy --only firestore:indexes`. If [controller] is given,
+  /// it's wired to the underlying shell so
+  /// [FirebaseProjectActionController.cancel] can abort the deploy.
   Future<void> deployFirestoreIndexes({
     FirebaseProjectActionController? controller,
   }) async {
@@ -88,7 +105,9 @@ class FirebaseProjectBuilder implements CommonAppBuilder {
     );
   }
 
-  /// Deploy storage rules
+  /// Deploys Storage security rules via `firebase deploy --only storage`.
+  /// If [controller] is given, it's wired to the underlying shell so
+  /// [FirebaseProjectActionController.cancel] can abort the deploy.
   Future<void> deployStorageRules({
     FirebaseProjectActionController? controller,
   }) async {
@@ -99,7 +118,13 @@ class FirebaseProjectBuilder implements CommonAppBuilder {
     );
   }
 
-  /// Deploy functions
+  /// Deploys Cloud Functions via `firebase deploy --only functions[:name,...]`.
+  ///
+  /// [functions] overrides [FirebaseProjectOptions.functions] as the list
+  /// of function names to deploy; if both are `null`/empty, all functions
+  /// are deployed. If [controller] is given, it's wired to the underlying
+  /// shell so [FirebaseProjectActionController.cancel] can abort the
+  /// deploy.
   Future<void> deployFunctions({
     List<String>? functions,
     FirebaseProjectActionController? controller,
@@ -119,7 +144,10 @@ class FirebaseProjectBuilder implements CommonAppBuilder {
     await shell.run('firebase deploy$onlyArg --project ${options.projectId}');
   }
 
-  /// Deploy only specified targets.
+  /// Deploys via `firebase deploy --only [only]`, where [only] is a raw
+  /// comma-separated target list (e.g. `'hosting,firestore:rules'`). If
+  /// [controller] is given, it's wired to the underlying shell so
+  /// [FirebaseProjectActionController.cancel] can abort the deploy.
   Future<void> deployOnly(
     String only, {
     FirebaseProjectActionController? controller,
@@ -131,14 +159,21 @@ class FirebaseProjectBuilder implements CommonAppBuilder {
     );
   }
 
-  /// Deploy everything
+  /// Deploys every configured target via a plain `firebase deploy`. If
+  /// [controller] is given, it's wired to the underlying shell so
+  /// [FirebaseProjectActionController.cancel] can abort the deploy.
   Future<void> deploy({FirebaseProjectActionController? controller}) async {
     var shell = Shell(workingDirectory: path);
     controller?.shell = shell;
     await shell.run('firebase deploy --project ${options.projectId}');
   }
 
-  /// Start emulators
+  /// Starts the Firebase emulators via `firebase emulators:start`.
+  ///
+  /// [only], if given, is passed through as a raw `--only` target list
+  /// (e.g. `'hosting,firestore'`); otherwise all configured emulators are
+  /// started. If [controller] is given, it's wired to the underlying
+  /// shell so [FirebaseProjectActionController.cancel] can stop it.
   Future<void> serve({
     String? only,
     FirebaseProjectActionController? controller,

@@ -1,3 +1,4 @@
+/// Upload and publish Android app bundles to the Google Play Console.
 library;
 
 export 'package:googleapis/androidpublisher/v3.dart' show AndroidPublisherApi;

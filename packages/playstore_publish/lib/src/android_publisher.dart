@@ -8,23 +8,30 @@ import 'package:googleapis_auth/auth_io.dart';
 
 //import 'package:googleapis'
 
-/// Scopes for Android Publisher
+/// OAuth scopes required to call the Google Play Android Publisher API,
+/// passed to [initPublishApiClient].
 const androidPublisherScopes = [AndroidPublisherApi.androidpublisherScope];
 
-/// Android Publisher Client
+/// A ready-to-use Android Publisher API client, from which per-package
+/// [AndroidPublisher]s are obtained via [getPublisher]. Prefer creating
+/// one via [initAndroidPublisherClient].
 class AndroidPublisherClient {
   final AndroidPublisherApi _api;
 
-  /// Constructor
+  /// Wraps an already-authenticated [AndroidPublisherApi] client.
   AndroidPublisherClient({required this._api});
 
-  /// Get publisher for a given package name
+  /// Returns an [AndroidPublisher] for the app identified by
+  /// [packageName] (e.g. `'com.example.app'`), sharing this client's API
+  /// connection.
   AndroidPublisher getPublisher(String packageName) {
     return AndroidPublisher(packageName: packageName, api: _api);
   }
 }
 
-/// Prefer
+/// Authenticates with [serviceAccount] (a decoded Google service account
+/// JSON key) and returns a ready-to-use [AndroidPublisherClient]. Preferred
+/// over calling [initPublishApiClient] directly.
 Future<AndroidPublisherClient> initAndroidPublisherClient({
   required Map serviceAccount,
 }) async {
@@ -32,7 +39,9 @@ Future<AndroidPublisherClient> initAndroidPublisherClient({
   return AndroidPublisherClient(api: api);
 }
 
-/// Initialize the Android Publisher API, prefer [initAndroidPublisherClient]
+/// Authenticates with [serviceAccount] (a decoded Google service account
+/// JSON key) using [androidPublisherScopes] and returns the raw
+/// [AndroidPublisherApi] client. Prefer [initAndroidPublisherClient].
 Future<AndroidPublisherApi> initPublishApiClient({
   required Map serviceAccount,
 }) async {
@@ -45,42 +54,53 @@ Future<AndroidPublisherApi> initPublishApiClient({
   return publish;
 }
 
-/// Android Publisher
+/// Google Play operations (list/upload bundles, list/publish tracks) for a
+/// single app, identified by [packageName]. Each operation opens and
+/// closes its own "app edit" transaction against the Play Console API.
 class AndroidPublisher {
-  /// - "draft" : The release's APKs are not being served to users.
-  /// - "completed"
+  /// Release status: the release's APKs/bundles are not served to users.
   static const releaseStatusDraft = 'draft';
 
-  /// - "completed" : The release will have no further changes. Its APKs are
-  /// being served to all users, unless they are eligible to APKs of a more
-
+  /// Release status: the release has no further changes and its
+  /// APKs/bundles are being served to all eligible users.
   static const releaseStatusCompleted = 'completed';
 
-  /// Package name
+  /// The Android application ID this publisher operates on (e.g.
+  /// `'com.example.app'`).
   final String packageName;
 
   /// API
   final AndroidPublisherApi _api;
 
   @Deprecated('Do no use')
-  /// Internal api
+  /// The underlying [AndroidPublisherApi] client.
   AndroidPublisherApi get api => _api;
 
-  /// Either api or client must be provided
+  /// Creates a publisher for [packageName]. Exactly one of [api] or
+  /// [client] must be provided to supply the underlying API connection.
   AndroidPublisher({
     required this.packageName,
     AndroidPublisherApi? api,
     AndroidPublisherClient? client,
   }) : _api = api ?? client!._api;
 
-  /// New edit, delete on error
+  /// Opens a new Play Console "edit" transaction for [packageName].
+  ///
+  /// The caller is responsible for eventually calling
+  /// [AndroidPublisherAppEdit.delete] (to discard) or
+  /// [AndroidPublisherAppEdit.validateAndCommit] (to apply); prefer
+  /// [readOnlyAppEdit] or [writeAppEdit], which handle this automatically.
   Future<AndroidPublisherAppEdit> newAppEdit() async {
     var appEdit = AppEdit();
     appEdit = await _api.edits.insert(appEdit, packageName);
     return AndroidPublisherAppEdit(appEdit: appEdit, publisher: this);
   }
 
-  /// Read only app edit
+  /// Opens a new app edit (see [newAppEdit]), runs [action] on it, then
+  /// deletes the edit (discarding any changes) regardless of the outcome,
+  /// rethrowing on failure.
+  ///
+  /// Returns whatever [action] returns.
   Future<T> readOnlyAppEdit<T>(
     Future<T> Function(AndroidPublisherAppEdit appEdit) action,
   ) async {
@@ -93,7 +113,13 @@ class AndroidPublisher {
     }
   }
 
-  /// Write app edit
+  /// Opens a new app edit (see [newAppEdit]), runs [action] on it, then
+  /// validates and commits the edit (see
+  /// [AndroidPublisherAppEdit.validateAndCommit], passing
+  /// [changesNotSentForReview] through). If [action] throws, the edit is
+  /// deleted instead and the error rethrown.
+  ///
+  /// Returns whatever [action] returns.
   Future<T> writeAppEdit<T>(
     Future<T> Function(AndroidPublisherAppEdit appEdit) action, {
     bool? changesNotSentForReview,
@@ -111,7 +137,8 @@ class AndroidPublisher {
     }
   }
 
-  /// List tracks
+  /// Lists the names of all release tracks configured for this app (e.g.
+  /// `'production'`, `'beta'`, `'internal'`).
   Future<List<String>> listTracks() async {
     var apAppEdit = await newAppEdit();
     try {
@@ -123,21 +150,26 @@ class AndroidPublisher {
     }
   }
 
-  /// List bundles
+  /// Lists the version codes of all uploaded app bundles for this app.
   Future<List<int>> listBundles() async {
     return await readOnlyAppEdit((appEdit) async {
       return await appEdit.listBundles();
     });
   }
 
-  /// Check if versionCode exists
+  /// Checks whether an app bundle with the given [versionCode] has already
+  /// been uploaded.
   Future<bool> hasBundleVersionCode(int versionCode) async {
     return await readOnlyAppEdit((appEdit) async {
       return await appEdit.hasBundleVersionCode(versionCode);
     });
   }
 
-  /// Publish version code
+  /// Publishes the app bundle with [versionCode] to the release track
+  /// [trackName].
+  ///
+  /// [releaseStatus] defaults to [releaseStatusCompleted] (see
+  /// [AndroidPublisherAppEdit.publishTrack]).
   Future<void> publishVersionCode({
     required String trackName,
     required int versionCode,
@@ -152,7 +184,9 @@ class AndroidPublisher {
     });
   }
 
-  /// Publish version code
+  /// Returns the version code currently published on release track
+  /// [trackName] with status [releaseStatusCompleted], or `null` if none
+  /// matches.
   Future<int?> getTrackVersionCode({required String trackName}) async {
     return await readOnlyAppEdit((appEdit) async {
       var versionCode = await appEdit.getTrackVersionCode(trackName);
@@ -160,7 +194,12 @@ class AndroidPublisher {
     });
   }
 
-  /// Check if versionCode exists, upload if not, publish.
+  /// Uploads the app bundle at [aabPath] (unless [versionCode] was already
+  /// uploaded) and publishes it to release track [trackName].
+  ///
+  /// [releaseStatus] defaults to [releaseStatusCompleted]. If
+  /// [changesNotSentForReview] is `true`, the commit skips the validate
+  /// step (see [AndroidPublisherAppEdit.validateAndCommit]).
   Future<void> uploadBundleAndPublish({
     required String aabPath,
     required String trackName,
@@ -185,26 +224,31 @@ class AndroidPublisher {
   }
 }
 
-/// Android Publisher App Edit
+/// A single in-progress Play Console "edit" transaction, opened via
+/// [AndroidPublisher.newAppEdit], through which bundles are
+/// listed/uploaded and tracks are read/published.
 class AndroidPublisherAppEdit {
-  /// Publisher
+  /// The publisher this edit was opened from.
   final AndroidPublisher publisher;
 
-  /// App edit
+  /// The underlying Play Developer API edit resource.
   final AppEdit appEdit;
 
-  /// Id
+  /// This edit's ID, as assigned by the Play Developer API.
   String get id => appEdit.id!;
 
-  /// Package name
+  /// The Android application ID this edit applies to, i.e.
+  /// `publisher.packageName`.
   String get packageName => publisher.packageName;
 
   AndroidPublisherApi get _api => publisher._api;
 
-  /// Constructor
+  /// Wraps an already-opened [appEdit] belonging to [publisher]. Prefer
+  /// [AndroidPublisher.newAppEdit].
   AndroidPublisherAppEdit({required this.appEdit, required this.publisher});
 
-  /// Safe
+  /// Deletes this edit, discarding any changes made through it. Errors are
+  /// caught and logged to stderr rather than thrown.
   Future<void> delete() async {
     try {
       await publisher._api.edits.delete(packageName, id);
@@ -213,7 +257,8 @@ class AndroidPublisherAppEdit {
     }
   }
 
-  /// List bundles
+  /// Lists the version codes of all app bundles uploaded so far within
+  /// this edit.
   Future<List<int>> listBundles() async {
     var aabListResponse = await _api.edits.bundles.list(packageName, id);
     if (aabListResponse.bundles != null) {
@@ -223,7 +268,8 @@ class AndroidPublisherAppEdit {
     return <int>[];
   }
 
-  /// Check if versionCode exists
+  /// Checks whether an app bundle with the given [versionCode] has already
+  /// been uploaded within this edit.
   Future<bool> hasBundleVersionCode(int versionCode) async {
     var aabListResponse = await _api.edits.bundles.list(packageName, id);
     if (aabListResponse.bundles != null) {
@@ -238,7 +284,8 @@ class AndroidPublisherAppEdit {
     return false;
   }
 
-  /// Upload bundle
+  /// Uploads the `.aab` file at [aabPath] as a new app bundle within this
+  /// edit, logging its size and resulting version code.
   Future<void> uploadBundle(String aabPath) async {
     var file = File(aabPath);
     var size = file.statSync().size;
@@ -253,11 +300,12 @@ class AndroidPublisherAppEdit {
     stdout.writeln(aab.versionCode);
   }
 
-  /// Publish track
+  /// Sets release track [trackName] to serve [versionCode], within this
+  /// edit.
+  ///
+  /// [releaseStatus] defaults to [AndroidPublisher.releaseStatusCompleted].
   Future publishTrack(
     String trackName, {
-
-    /// Release status, default to completed
     String? releaseStatus,
     required int versionCode,
   }) async {
@@ -273,7 +321,10 @@ class AndroidPublisherAppEdit {
     await _api.edits.tracks.update(track, packageName, appEdit.id!, trackName);
   }
 
-  /// Publish track
+  /// Returns the version code of release track [trackName]'s release
+  /// whose status matches [releaseStatus] (defaults to
+  /// [AndroidPublisher.releaseStatusCompleted]), or `null` if none
+  /// matches.
   Future<int?> getTrackVersionCode(
     String trackName, {
     String? releaseStatus,
@@ -297,7 +348,12 @@ class AndroidPublisherAppEdit {
     //print(track.toJson());
   }
 
-  /// Commit only as validate fails on changesNotSentForReview
+  /// Validates and commits this edit, applying all changes made through
+  /// it.
+  ///
+  /// If [changesNotSentForReview] is `true`, the validate step is skipped
+  /// (the Play Developer API rejects validation of edits marked this way)
+  /// and only commit is called.
   Future<void> validateAndCommit({bool? changesNotSentForReview}) async {
     if (changesNotSentForReview != true) {
       await _api.edits.validate(packageName, id);

@@ -1,4 +1,7 @@
-/// Format size in bytes to a human readable string.
+/// Formats [bytes] as a human-readable size string with 3 decimal places
+/// and the largest fitting unit (e.g. `'1.500 KB'`, `'2.000 MB'`), using
+/// 1024-based (binary) units. Negative values keep their sign (e.g.
+/// `'-512 B'`).
 String formatSize(int bytes) {
   var absBytes = bytes.abs();
   var sign = bytes < 0 ? '-' : '';

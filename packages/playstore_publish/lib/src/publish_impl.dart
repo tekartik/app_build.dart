@@ -10,21 +10,28 @@ import 'package:tekartik_android_utils/aab_utils.dart';
 
 const _scopes = [AndroidPublisherApi.androidpublisherScope];
 
-/// Local aab
+/// A local `.aab` file and its parsed manifest info, used as input to
+/// [manageBundle]/[uploadBundle]/[publishBundle].
 class LocalAab {
-  /// Path to the aab
+  /// Path to the `.aab` file on disk.
   String path;
 
-  /// Aab info
+  /// Parsed manifest info for [path], populated by [init] if not provided
+  /// up front.
   AabInfo? aabInfo;
 
-  /// Constructor
+  /// Creates a reference to the `.aab` at [path], optionally with
+  /// already-known [aabInfo] (otherwise call [init] before reading
+  /// [versionCode]/[packageName]).
   LocalAab(this.path, [this.aabInfo]);
 
-  /// Version code
+  /// The bundle's version code, parsed from [aabInfo].
+  ///
+  /// [init] must have been called (or [aabInfo] provided) first.
   int get versionCode => int.parse(aabInfo!.versionCode!);
 
-  /// Init
+  /// Populates [aabInfo] from [path]'s manifest, if not already set. Logs
+  /// to stderr (but does not throw) if [path] doesn't exist.
   Future init() async {
     if (aabInfo == null) {
       if (!File(path).existsSync()) {
@@ -34,10 +41,13 @@ class LocalAab {
     }
   }
 
-  /// Package name
+  /// The bundle's package name, from [aabInfo].
+  ///
+  /// [init] must have been called (or [aabInfo] provided) first.
   String? get packageName => aabInfo!.name;
 
-  /// To map
+  /// Converts this to a `{...aabInfo, path}` map, mainly for
+  /// debugging/logging via [toString].
   Map<String, dynamic> toMap() {
     var map = aabInfo!.toMap();
     map['path'] = path;
@@ -50,12 +60,16 @@ class LocalAab {
 
 const _noTrack = '_no_track_';
 
-/// Upload aabs
+/// Uploads [localAab] to the Play Console without publishing it to any
+/// track. See [manageBundle] for the service account lookup and upload
+/// behavior.
 Future uploadBundle(LocalAab localAab) async {
   return await manageBundle(localAab, publishOptions: _noPublishOptions);
 }
 
-/// Publish to internal by default
+/// Publishes the already-uploaded [localAab] to [track] (defaults to
+/// [publishTrackInternal]), without re-uploading it. See [manageBundle] for
+/// the service account lookup and publish behavior.
 Future publishBundle(LocalAab localAab, {String? track}) async {
   track ??= publishTrackInternal;
   return await manageBundle(
@@ -64,28 +78,35 @@ Future publishBundle(LocalAab localAab, {String? track}) async {
   );
 }
 
-/// Upload options
+/// Whether [manageBundle] should upload the bundle.
 class UploadOptions {
-  /// Upload
+  /// If `true`, the bundle is uploaded; if `false`, upload is skipped
+  /// (the bundle is expected to already exist on the Play Console).
   final bool upload;
 
-  /// Constructor
+  /// Creates upload options with the given [upload] flag.
   UploadOptions({required this.upload});
 }
 
-/// Publish options
+/// Controls whether and how [manageBundle] publishes the bundle to a
+/// release track.
 class PublishOptions {
-  /// Track
+  /// Release track to publish to (e.g. [publishTrackInternal]), or `null`
+  /// to skip publishing.
   final String? track;
 
-  /// If true, changes that have not been sent for review will be ignored.
-  /// Sometimes necessary for initial publishing.
+  /// If `true`, changes that have not been sent for review are ignored
+  /// (skips the validate step). Sometimes necessary for initial
+  /// publishing.
   final bool? changesNotSentForReview;
 
-  /// Default to completed, might require other status in some cases (draft),
+  /// Release status to set (e.g. `'completed'`, `'draft'`); defaults to
+  /// `'completed'` when `null`.
   final String? releaseStatus;
 
-  /// Constructor
+  /// Creates publish options targeting [track] (`null` to skip
+  /// publishing), with [changesNotSentForReview] and [releaseStatus]
+  /// defaulting to `null` (see their field docs).
   PublishOptions({
     this.track,
     this.changesNotSentForReview,
@@ -96,39 +117,48 @@ class PublishOptions {
 final _noPublishOptions = PublishOptions(track: _noTrack);
 final _noUploadOptions = UploadOptions(upload: false);
 
-/// Compat
+/// Compat alias for [publishTrackInternal].
 // @Deprecated('Use publishTrackInternal')
 const internalTrack = publishTrackInternal;
 
-/// Common track
+/// The `'internal'` testing track.
 const publishTrackInternal = 'internal';
 
-/// Production track
+/// The `'production'` release track.
 const publishTrackProduction = 'production';
 
-/// Beta track
+/// The `'beta'` testing track.
 const publishTrackBeta = 'beta';
 
-/// Alpha track
+/// The `'alpha'` testing track.
 const publishTrackAlpha = 'alpha';
 
-/// Wear beta track
+/// The `'wear:beta'` Wear OS testing track.
 const publishTrackWearBeta = 'wear:beta';
 
-/// Wear internal track
+/// The `'wear:internal'` Wear OS testing track.
 const publishTrackWearInternal = 'wear:internal';
 
-/// Wear production track
+/// The `'wear:production'` Wear OS release track.
 const publishTrackWearProduction = 'wear:production';
 
-/// Upload and/or publish a bundle
-///   /// - "draft" : The release's APKs are not being served to users.
-//   /// - "inProgress" : The release's APKs are being served to a fraction of
-//   /// users, determined by 'user_fraction'.
-//   /// - "halted" : The release's APKs will no longer be served to users. Users
-//   /// who already have these APKs are unaffected.
-//   /// - "completed"
-/// manageBundle
+/// Uploads and/or publishes [localAab] using a Google service account.
+///
+/// Looks for the service account JSON key at [serviceAccountPath]
+/// (defaults to `.local/service_account.json`), opens a Play Console edit,
+/// and:
+/// - if [uploadOptions] requests upload (defaults to not uploading — see
+///   [uploadBundle]/[publishBundle] for the common cases), uploads the
+///   bundle at [localAab]'s path, throwing if that version code was
+///   already uploaded as an apk;
+/// - if [uploadOptions] does *not* request upload, expects the version
+///   code to already exist as an apk or bundle, throwing if it's missing;
+/// - if [publishOptions] specifies a track, publishes the (possibly newly
+///   uploaded) version code to that track;
+/// - validates and commits the edit.
+///
+/// The edit is deleted (discarding changes) and the error rethrown if any
+/// step fails.
 Future manageBundle(
   LocalAab localAab, {
   String? serviceAccountPath,

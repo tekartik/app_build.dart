@@ -10,14 +10,14 @@ String _fixFolder(String path, String folder) {
   return normalize(absolute(join(path, folder)));
 }
 
-/// Copy to deploy using deploy.yaml
+/// Copies the built web app from [buildDir] into [deployDir] (both
+/// resolved against [path] if relative), following the copy rules
+/// declared in `[buildDir]/deploy.yaml`.
+///
+/// Throws a [StateError] if that build folder has no `deploy.yaml`.
 Future<void> webAppBuildToDeploy(
   String path, {
-
-  /// deploy dir from path
   required String deployDir,
-
-  /// Build folder from path
   required String buildDir,
 }) async {
   buildDir = _fixFolder(path, buildDir);

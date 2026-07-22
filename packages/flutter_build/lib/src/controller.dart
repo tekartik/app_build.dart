@@ -2,18 +2,22 @@ import 'dart:io';
 
 import 'package:dev_build/shell.dart';
 
-/// Shell controller
+/// Lets callers observe and cancel the shell used to run a Flutter build
+/// command, when passed to [FlutterWebAppBuilder.controller].
 class BuildShellController {
-  /// Constructor
+  /// Creates a controller, optionally already wrapping [shell].
   BuildShellController({Shell? shell}) {
     _shell = shell;
   }
 
-  /// Shell
+  /// The currently running command's shell.
+  ///
+  /// Throws if no shell has been set yet (before a command starts, or
+  /// after this controller was created without one).
   Shell get shell => _shell!;
   Shell? _shell;
 
-  /// Cancel current shell
+  /// Kills the current shell's process with `SIGKILL`, if one is set.
   void cancel() {
     _shell?.kill(ProcessSignal.sigkill);
   }
