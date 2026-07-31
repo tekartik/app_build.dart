@@ -34,6 +34,13 @@ dependencies:
   tekartik_common_utils:
     git:
       url: https://github.com/tekartik/common_utils.dart
+  # Holds the firebase project deploy/serve commands and their dev menu.
+  # Not tekartik_firebase_tools: nothing here needs the admin sdk, and this
+  # package is depended on by flutter apps that only want the deploy commands.
+  tekartik_firebase_tools_common:
+    git:
+      url: https://github.com/tekartik/firebase_tools.dart
+      path: packages/firebase_tools_common
 dev_dependencies:
   test: ">=1.31.0"
 resolution: workspace
