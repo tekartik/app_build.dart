@@ -23,4 +23,21 @@ extension CommonAppBuilderExt on CommonAppBuilder {
       await generateVersion();
     }
   }
+
+  /// Bumps the version of the project at [CommonAppBuilder.path], via
+  /// `version_io`'s `pathAppVersionBumpAndGenerate`.
+  Future<void> bumpVersion({
+    bool? patch,
+    bool? minor,
+    bool? major,
+    bool? ext,
+  }) async {
+    await version_io.pathAppVersionBumpAndGenerate(
+      path: path,
+      patch: patch,
+      minor: minor,
+      major: major,
+      ext: ext,
+    );
+  }
 }

@@ -73,6 +73,10 @@ void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
     await builder.generateVersion();
   });
 
+  item('bumpVersion', () async {
+    await builder.bumpVersion();
+  });
+
   item('Js size', () async {
     await builder.reportJsSize();
   });
