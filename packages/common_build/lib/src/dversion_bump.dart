@@ -19,9 +19,6 @@ Future<void> main(List<String> arguments) async {
     stdout.writeln(
       'Default update low and bump patch version for flutter apps',
     );
-    stdout.writeln(
-      'Default update low and bump patch version for flutter apps',
-    );
     stdout.writeln('Usage: dversion_bump.dart [options]');
     stdout.writeln(parser.usage);
     return;
@@ -44,6 +41,23 @@ Future<void> main(List<String> arguments) async {
       ext = true;
     }
   }
+  await _versionBumpAndGenerate(
+    path: path,
+    patch: patch,
+    minor: minor,
+    major: major,
+    ext: ext,
+  );
+}
+
+/// Bump the version then regenerate the version file if any.
+Future<void> _versionBumpAndGenerate({
+  String? path,
+  required bool patch,
+  required bool minor,
+  required bool major,
+  required bool ext,
+}) async {
   await pathVersionBump(
     path: path,
     patch: patch,
@@ -75,16 +89,11 @@ Future<void> pathAppVersionBumpAndGenerate({
     patch = true;
     ext = true;
   }
-  await pathVersionBump(
+  await _versionBumpAndGenerate(
     path: path,
     patch: patch,
     minor: minor,
     major: major,
     ext: ext,
   );
-
-  if (await hasGeneratedVersionFile()) {
-    stdout.writeln('Updating generated version.dart file');
-    await generateVersion();
-  }
 }
