@@ -60,19 +60,24 @@ String _fixFolder(String path, String folder) {
   return join(path, folder);
 }
 
-/// Deploys the already-built web app under [deployDir] (defaults to
-/// [firebaseDefaultHostingDir] resolved against [path]; relative paths are
-/// resolved against [path]) to Firebase Hosting, using [options] for the
-/// project/target/hosting-id.
-///
-/// Configures the hosting target/hosting-id binding first if needed. If
-/// [controller] is given, it's wired to the underlying shell so
-/// [FirebaseWebAppActionController.cancel] can abort the deploy.
-Future firebaseWebAppDeploy(
+/// A deploy or serve action on the web app at `path`, i.e.
+/// [firebaseWebAppDeploy] or [firebaseWebAppServe].
+typedef FirebaseWebAppAction =
+    Future<void> Function(
+      String path,
+      FirebaseDeployOptions options, {
+      String? deployDir,
+      FirebaseWebAppActionController? controller,
+    });
+
+/// Configures the hosting target/hosting-id binding if needed then runs the
+/// `firebase` command built by [command] from the deploy directory.
+Future<void> _firebaseWebAppRunHostingCommand(
   String path,
   FirebaseDeployOptions options, {
   String? deployDir,
   FirebaseWebAppActionController? controller,
+  required String Function(String projectId, String target) command,
 }) async {
   deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
 
@@ -84,8 +89,30 @@ Future firebaseWebAppDeploy(
 
   await _firebaseWebAppPrepareHosting(path, options, deployDir: deployDir);
 
-  await shell.run(
-    'firebase --project $projectId deploy --only hosting:$target',
+  await shell.run(command(projectId, target));
+}
+
+/// Deploys the already-built web app under [deployDir] (defaults to
+/// [firebaseDefaultHostingDir] resolved against [path]; relative paths are
+/// resolved against [path]) to Firebase Hosting, using [options] for the
+/// project/target/hosting-id.
+///
+/// Configures the hosting target/hosting-id binding first if needed. If
+/// [controller] is given, it's wired to the underlying shell so
+/// [FirebaseWebAppActionController.cancel] can abort the deploy.
+Future<void> firebaseWebAppDeploy(
+  String path,
+  FirebaseDeployOptions options, {
+  String? deployDir,
+  FirebaseWebAppActionController? controller,
+}) async {
+  await _firebaseWebAppRunHostingCommand(
+    path,
+    options,
+    deployDir: deployDir,
+    controller: controller,
+    command: (projectId, target) =>
+        'firebase --project $projectId deploy --only hosting:$target',
   );
 }
 
@@ -129,12 +156,13 @@ Future _firebaseWebAppPrepareHosting(
 /// Copies the built web app from `[path]/build/[folder]` into
 /// `<deployDir>/public` (where [deployDir] defaults to
 /// [firebaseDefaultHostingDir] resolved against [path]), following the
-/// copy rules declared in that build folder's `deploy.yaml`.
+/// copy rules declared in that build folder's `deploy.yaml` when present,
+/// copying the whole build folder otherwise.
 ///
 /// [folder] is the build output subfolder under `build/`, defaulting to
 /// `'web'`.
 ///
-/// Throws a [StateError] if the build folder has no `deploy.yaml`.
+/// Throws a [StateError] if the build folder is missing.
 Future<void> firebaseWebAppBuildToDeploy(
   String path, {
   String? deployDir,
@@ -146,15 +174,21 @@ Future<void> firebaseWebAppBuildToDeploy(
     'public',
   );
 
+  var buildDir = Directory(buildFolder);
+  // ignore: avoid_slow_async_io
+  if (!await buildDir.exists()) {
+    throw StateError('Missing build folder ($buildFolder), build first');
+  }
+
   var deployFile = File(join(buildFolder, 'deploy.yaml'));
   // ignore: avoid_slow_async_io
-  if (!await deployFile.exists()) {
-    throw StateError('Missing deploy.yaml file ($deployFile)');
-  }
+  var hasDeployFile = await deployFile.exists();
+
   await fsDeploy(
     options: FsDeployOptions()..noSymLink = true,
-    yaml: deployFile,
-    src: Directory(buildFolder),
+    // When null, the whole folder is copied.
+    yaml: hasDeployFile ? deployFile : null,
+    src: buildDir,
     dst: Directory(deployDir),
   );
 }
@@ -176,17 +210,13 @@ Future<void> firebaseWebAppServe(
   String? deployDir,
   FirebaseWebAppActionController? controller,
 }) async {
-  deployDir = _fixFolder(path, deployDir ?? firebaseDefaultHostingDir);
-
-  var projectId = options.projectId;
-
-  var target = options.target;
-
-  var shell = Shell().pushd(deployDir);
-  controller?._shell = shell;
-  await _firebaseWebAppPrepareHosting(path, options, deployDir: deployDir);
-  await shell.run(
-    'firebase emulators:start --project $projectId  --only hosting:$target',
+  await _firebaseWebAppRunHostingCommand(
+    path,
+    options,
+    deployDir: deployDir,
+    controller: controller,
+    command: (projectId, target) =>
+        'firebase emulators:start --project $projectId --only hosting:$target',
   );
 }
 

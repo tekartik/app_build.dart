@@ -10,6 +10,20 @@ Future<void> flutterWebAppBuild(String directory) async {
   await shell.run('flutter build web');
 }
 
+/// Builds the Flutter web app in [directory], copies the output to the
+/// deploy directory then runs [action] (deploy or serve) on it.
+Future<void> _flutterWebAppBuildAndRun(
+  String directory, {
+  required FirebaseDeployOptions firebaseDeployOptions,
+  String? deployDir,
+  required FirebaseWebAppAction action,
+}) async {
+  await flutterWebAppBuild(directory);
+
+  await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
+  await action(directory, firebaseDeployOptions, deployDir: deployDir);
+}
+
 /// Builds the Flutter web app in [directory] and deploys it to Firebase
 /// Hosting, using [firebaseDeployOptions] for the deploy target/project.
 ///
@@ -21,13 +35,11 @@ Future<void> flutterWebAppBuildAndDeploy(
   required FirebaseDeployOptions firebaseDeployOptions,
   String? deployDir,
 }) async {
-  await flutterWebAppBuild(directory);
-
-  await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
-  await firebaseWebAppDeploy(
+  await _flutterWebAppBuildAndRun(
     directory,
-    firebaseDeployOptions,
+    firebaseDeployOptions: firebaseDeployOptions,
     deployDir: deployDir,
+    action: firebaseWebAppDeploy,
   );
 }
 
@@ -42,13 +54,11 @@ Future<void> flutterWebAppBuildAndServe(
   required FirebaseDeployOptions firebaseDeployOptions,
   String? deployDir,
 }) async {
-  await flutterWebAppBuild(directory);
-
-  await firebaseWebAppBuildToDeploy(directory, deployDir: deployDir);
-  await firebaseWebAppServe(
+  await _flutterWebAppBuildAndRun(
     directory,
-    firebaseDeployOptions,
+    firebaseDeployOptions: firebaseDeployOptions,
     deployDir: deployDir,
+    action: firebaseWebAppServe,
   );
 }
 
@@ -141,13 +151,15 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     await flutterWebAppClean(options.path);
   }
 
-  /// Copies the built output to the deploy directory and serves it locally
-  /// via the Firebase emulator. [controller], if given, can be used to
-  /// control/observe the running serve action.
-  Future<void> serve({FirebaseWebAppActionController? controller}) async {
+  /// Copies the built output to the deploy directory then runs [action]
+  /// (deploy or serve) on it.
+  Future<void> _copyBuildToDeployAndRun(
+    FirebaseWebAppAction action, {
+    FirebaseWebAppActionController? controller,
+  }) async {
     await _flutterWebAppBuilderOnly.buildToDeploy();
 
-    await firebaseWebAppServe(
+    await action(
       options.path,
       options.deployOptions,
       deployDir: options.deployDir,
@@ -155,16 +167,19 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     );
   }
 
+  /// Copies the built output to the deploy directory and serves it locally
+  /// via the Firebase emulator. [controller], if given, can be used to
+  /// control/observe the running serve action.
+  Future<void> serve({FirebaseWebAppActionController? controller}) async {
+    await _copyBuildToDeployAndRun(firebaseWebAppServe, controller: controller);
+  }
+
   /// Copies the built output to the deploy directory and deploys it to
   /// Firebase Hosting. [controller], if given, can be used to
   /// control/observe the running deploy action.
   Future<void> deploy({FirebaseWebAppActionController? controller}) async {
-    await _flutterWebAppBuilderOnly.buildToDeploy();
-
-    await firebaseWebAppDeploy(
-      options.path,
-      options.deployOptions,
-      deployDir: options.deployDir,
+    await _copyBuildToDeployAndRun(
+      firebaseWebAppDeploy,
       controller: controller,
     );
   }
