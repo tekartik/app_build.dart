@@ -139,7 +139,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   Shell get _shell => controller?.shell ?? Shell(workingDirectory: path);
 
   /// Runs [buildOnly] then copies the output to the deploy directory (see
-  /// [buildToDeploy]).
+  /// [buildToDeploy]), `deploy.yaml` is not required.
   Future<void> build() async {
     await buildOnly();
     await _webAppBuildToDeploy();
@@ -200,8 +200,8 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   }
 
   /// Copies the already-built web app from `build/web` into the deploy
-  /// directory, following the copy rules in that folder's `deploy.yaml`.
-  /// Does not rebuild.
+  /// directory, following the copy rules in that folder's `deploy.yaml`
+  /// when present, copying the whole folder otherwise. Does not rebuild.
   Future<void> buildToDeploy() async {
     await _webAppBuildToDeploy();
   }
@@ -215,22 +215,29 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     return deployFile.existsSync();
   }
 
-  /// Copy to deploy using deploy.yaml
+  /// Copy to deploy using deploy.yaml when present, the whole build folder
+  /// is copied otherwise.
   Future<void> _webAppBuildToDeploy() async {
     _showInfoOnce();
     var buildFolder = join(path, 'build', 'web');
     var deployDir = _fixFolder(path, options.deployDir);
 
+    var buildDir = Directory(buildFolder);
+    // ignore: avoid_slow_async_io
+    if (!await buildDir.exists()) {
+      throw StateError('Missing build folder ($buildFolder), build first');
+    }
+
     var deployFile = File(join(buildFolder, 'deploy.yaml'));
 
     // ignore: avoid_slow_async_io
-    if (!await deployFile.exists()) {
-      throw StateError('Missing deploy.yaml file ($deployFile)');
-    }
+    var hasDeployFile = await deployFile.exists();
+
     await fsDeploy(
       options: FsDeployOptions()..noSymLink = true,
-      yaml: deployFile,
-      src: Directory(buildFolder),
+      // When null, the whole folder is copied.
+      yaml: hasDeployFile ? deployFile : null,
+      src: buildDir,
       dst: Directory(deployDir),
     );
   }

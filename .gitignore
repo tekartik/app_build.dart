@@ -10,3 +10,5 @@
 /.dart_tool/
 pubspec_overrides.yaml
 /packages/storage_publish
+.*
+!.gitignore
