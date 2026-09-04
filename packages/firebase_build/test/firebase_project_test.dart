@@ -1,3 +1,4 @@
+import 'package:path/path.dart';
 import 'package:tekartik_firebase_build/firebase_project.dart';
 import 'package:test/test.dart';
 
@@ -69,6 +70,47 @@ void main() {
         ),
       );
       expect(builder.path, '/tmp/my_dartff');
+    });
+  });
+
+  group('FirebaseProjectBuilderExt.firestoreFolder', () {
+    test('the default firestore folder of the app', () {
+      expect(
+        FirebaseProjectBuilderExt.defaultFirestoreDir,
+        join('deploy', 'firebase', 'firestore'),
+      );
+      var builder = FirebaseProjectBuilderExt.firestoreFolder(
+        projectId: 'my-project',
+        path: '/tmp/my_app',
+      );
+      expect(builder.options.projectId, 'my-project');
+      expect(builder.path, '/tmp/my_app/deploy/firebase/firestore');
+    });
+
+    test('the app defaults to the current directory', () {
+      expect(
+        FirebaseProjectBuilderExt.firestoreFolder(projectId: 'p').path,
+        normalize(absolute(FirebaseProjectBuilderExt.defaultFirestoreDir)),
+      );
+    });
+
+    test('another folder, relative or absolute', () {
+      expect(
+        FirebaseProjectBuilderExt.firestoreFolder(
+          projectId: 'p',
+          path: '/tmp/my_app',
+          firestoreDir: 'firebase',
+        ).path,
+        '/tmp/my_app/firebase',
+      );
+      expect(
+        FirebaseProjectBuilderExt.firestoreFolder(
+          projectId: 'p',
+          path: '/tmp/my_app',
+          firestoreDir: '/tmp/elsewhere',
+        ).path,
+        '/tmp/elsewhere',
+      );
     });
   });
 }

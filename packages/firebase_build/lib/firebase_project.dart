@@ -3,7 +3,9 @@
 /// The implementation lives in `tekartik_firebase_tools_common`, which
 /// aggregates it with the emulator suite and the auth/firestore/storage
 /// explorer; only [FirebaseProjectBuilder] is redeclared here, to also be a
-/// `CommonAppBuilder`.
+/// `CommonAppBuilder`, with the firestore folder of an app
+/// (`deploy/firebase/firestore`) as a static extension:
+/// [FirebaseProjectBuilderExt.firestoreFolder].
 library;
 
 export 'package:tekartik_firebase_tools_common/firebase_project.dart'
@@ -14,4 +16,5 @@ export 'package:tekartik_firebase_tools_common/firebase_project.dart'
         firebaseFolderProjectId,
         firebaseRcContentProjectId;
 
-export 'src/firebase_project.dart' show FirebaseProjectBuilder;
+export 'src/firebase_project.dart'
+    show FirebaseProjectBuilder, FirebaseProjectBuilderExt;
