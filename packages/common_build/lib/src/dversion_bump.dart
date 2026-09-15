@@ -50,7 +50,8 @@ Future<void> main(List<String> arguments) async {
   );
 }
 
-/// Bump the version then regenerate the version file if any.
+/// Bump the version of the package at [path] (defaults to `'.'`) then
+/// regenerate its `lib/src/version.dart` if it has one.
 Future<void> _versionBumpAndGenerate({
   String? path,
   required bool patch,
@@ -58,6 +59,7 @@ Future<void> _versionBumpAndGenerate({
   required bool major,
   required bool ext,
 }) async {
+  path ??= '.';
   await pathVersionBump(
     path: path,
     patch: patch,
@@ -65,9 +67,9 @@ Future<void> _versionBumpAndGenerate({
     major: major,
     ext: ext,
   );
-  if (await hasGeneratedVersionFile()) {
+  if (await hasGeneratedVersionFile(path: path)) {
     stdout.writeln('Updating generated version.dart file');
-    await generateVersion();
+    await generateVersion(path: path);
   }
 }
 
