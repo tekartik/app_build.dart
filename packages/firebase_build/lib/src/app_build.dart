@@ -68,9 +68,13 @@ class FlutterFirebaseWebAppOptions {
   /// Absolute, normalized path to the Flutter project.
   late final String path;
 
-  /// Directory the built web app is copied to before deploy/serve.
-  /// Defaults to `deploy/firebase/hosting/public`
-  /// (`firebaseDefaultWebDeployDir`) when `null`.
+  /// Firebase hosting directory, i.e. the one holding `firebase.json`, the
+  /// deploy/serve commands are run from. The built web app is copied to its
+  /// `public` sub directory.
+  ///
+  /// Defaults to `deploy/firebase/hosting` (`firebaseDefaultHostingDir`) when
+  /// `null`. Use it to pick between hosting configurations, for example a
+  /// cross origin isolated one for wasm and a regular one.
   final String? deployDir;
 
   /// Options controlling `flutter build web`, or `null` for defaults.
@@ -131,7 +135,10 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
       options: FlutterWebAppOptions(
         buildOptions: options.buildOptions,
         path: options.path,
-        deployDir: options.deployDir ?? firebaseDefaultWebDeployDir,
+        deployDir: join(
+          options.deployDir ?? firebaseDefaultHostingDir,
+          'public',
+        ),
       ),
     );
   }

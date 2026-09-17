@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:tekartik_app_build_demo_flutter_app/src/version.dart';
+import 'package:tekartik_common_utils/dev_utils.dart';
 
 void main() {
   runApp(const MyApp());
@@ -104,6 +105,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 SizedBox(height: 20),
                 Text('v$packageVersionText'),
                 SizedBox(height: 20),
+                const _DebugEnvMapView(),
+                SizedBox(height: 20),
               ],
             ),
           ],
@@ -114,6 +117,38 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
+    );
+  }
+}
+
+/// Displays the debug environment map (debug/release, web/wasm/js...).
+class _DebugEnvMapView extends StatelessWidget {
+  const _DebugEnvMapView();
+
+  @override
+  Widget build(BuildContext context) {
+    var textTheme = Theme.of(context).textTheme;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          'debugEnvMap',
+          textAlign: TextAlign.center,
+          style: textTheme.titleMedium,
+        ),
+        const SizedBox(height: 8),
+        for (var entry in debugEnvMap.entries)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(entry.key, style: textTheme.bodyMedium),
+                Text('${entry.value}', style: textTheme.bodyMedium),
+              ],
+            ),
+          ),
+      ],
     );
   }
 }

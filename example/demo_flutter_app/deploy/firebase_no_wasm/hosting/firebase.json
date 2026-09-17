@@ -20,11 +20,11 @@
           "headers": [
             {
               "key": "Cross-Origin-Embedder-Policy",
-              "value": "credentialless"
+              "value": "unsafe-none"
             },
             {
               "key": "Cross-Origin-Opener-Policy",
-              "value": "same-origin"
+              "value": "restrict-properties"
             }
           ]
         }
@@ -50,11 +50,11 @@
           "headers": [
             {
               "key": "Cross-Origin-Embedder-Policy",
-              "value": "credentialless"
+              "value": "unsafe-none"
             },
             {
               "key": "Cross-Origin-Opener-Policy",
-              "value": "same-origin"
+              "value": "restrict-properties"
             }
           ]
         }
@@ -80,11 +80,11 @@
           "headers": [
             {
               "key": "Cross-Origin-Embedder-Policy",
-              "value": "credentialless"
+              "value": "unsafe-none"
             },
             {
               "key": "Cross-Origin-Opener-Policy",
-              "value": "same-origin"
+              "value": "restrict-properties"
             }
           ]
         }

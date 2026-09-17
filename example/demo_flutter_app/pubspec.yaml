@@ -35,9 +35,17 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # For debugEnvMap, displayed on the home page.
+  tekartik_common_utils:
+    git:
+      url: https://github.com/tekartik/common_utils.dart
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
+
+  # For the deploy dir paths in the tool scripts.
+  path: ^1.9.0
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
