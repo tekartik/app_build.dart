@@ -138,6 +138,26 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
 
   Shell get _shell => controller?.shell ?? Shell(workingDirectory: path);
 
+  /// Whether `pub get` (or `flutter pub get`) has already been resolved
+  /// for [path], i.e. whether a `.dart_tool/package_config.json` file can
+  /// be found for it.
+  ///
+  /// Correctly handles Dart/Flutter workspaces: for a workspace member,
+  /// the workspace root's `package_config.json` is looked up instead of
+  /// [path]'s own (which workspace members don't have).
+  ///
+  /// Useful to decide whether `--no-pub` can be safely passed to commands
+  /// like `flutter build` / `flutter run` to skip a redundant (and slow)
+  /// `pub get`.
+  Future<bool> hasPubGetRun() async {
+    try {
+      await pathGetPackageConfigMap(path);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Runs [buildOnly] then copies the output to the deploy directory (see
   /// [buildToDeploy]), `deploy.yaml` is not required.
   Future<void> build() async {
@@ -148,7 +168,8 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   /// Runs `flutter build web` (regenerating the version file first if
   /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm` and
   /// `target` settings, then logs the built JS bundle size (see
-  /// [reportJsSize]).
+  /// [reportJsSize]). Passes `--no-pub` when [hasPubGetRun] reports `pub
+  /// get` already ran for [path] (or its workspace).
   Future<void> buildOnly() async {
     await generateVersionIfNeeded();
     var buildOptions = options.buildOptions;
@@ -172,7 +193,8 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     if (buildOptions?.target != null) {
       targetOptions = ' --target ${buildOptions!.target}';
     }
-    await shell.run('flutter build web$wasmOptions$targetOptions');
+    var noPubOptions = await hasPubGetRun() ? ' --no-pub' : '';
+    await shell.run('flutter build web$wasmOptions$targetOptions$noPubOptions');
 
     await reportJsSize();
   }
@@ -256,10 +278,14 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   }
 
   /// Runs the app in Chrome via `flutter run -d chrome`, on
-  /// [FlutterWebAppOptions.webPort].
+  /// [FlutterWebAppOptions.webPort]. Passes `--no-pub` when [hasPubGetRun]
+  /// reports `pub get` already ran for [path] (or its workspace).
   Future<void> run() async {
     var shell = _shell;
-    await shell.run('flutter run -d chrome --web-port ${options.webPort}');
+    var noPubOptions = await hasPubGetRun() ? ' --no-pub' : '';
+    await shell.run(
+      'flutter run -d chrome --web-port ${options.webPort}$noPubOptions',
+    );
   }
 
   /// Deploys the contents of the deploy directory using [deployer].
