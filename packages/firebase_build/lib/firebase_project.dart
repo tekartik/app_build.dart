@@ -13,6 +13,7 @@ export 'package:tekartik_firebase_tools_common/firebase_project.dart'
         FirebaseProjectOptions,
         FirebaseProjectActionController,
         firebaseFunctionsDeployOnly,
+        firebaseHostingDeployOnly,
         firebaseFolderProjectId,
         firebaseRcContentProjectId;
 

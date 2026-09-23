@@ -4,6 +4,7 @@ export 'src/firebase_deploy.dart'
         firebaseWepAppBuildToDeploy, // ignore: deprecated_member_use_from_same_package
         firebaseWebAppBuildToDeploy,
         firebaseDefaultDeployDir,
+        firebaseDefaultPublicDir,
         firebaseWebAppDeploy,
         firebaseWebAppServe,
         FirebaseWebAppActionController;

@@ -70,12 +70,22 @@ class FlutterFirebaseWebAppOptions {
 
   /// Firebase hosting directory, i.e. the one holding `firebase.json`, the
   /// deploy/serve commands are run from. The built web app is copied to its
-  /// `public` sub directory.
+  /// [publicDir] sub directory.
   ///
   /// Defaults to `deploy/firebase/hosting` (`firebaseDefaultHostingDir`) when
-  /// `null`. Use it to pick between hosting configurations, for example a
-  /// cross origin isolated one for wasm and a regular one.
+  /// `null`, relative to [path] unless absolute. Use it to pick between
+  /// hosting configurations, for example a cross origin isolated one for wasm
+  /// and a regular one, or to deploy from a firebase folder shared with the
+  /// functions and the rules of the project.
   final String? deployDir;
+
+  /// The `public` folder of the hosting target in `firebase.json`, relative
+  /// to [deployDir]: where the built web app is copied.
+  ///
+  /// Defaults to `public` (`firebaseDefaultPublicDir`). A firebase folder
+  /// hosting several apps gives each its own (`public/admin_app`,
+  /// `public/user_app`).
+  final String? publicDir;
 
   /// Options controlling `flutter build web`, or `null` for defaults.
   final FlutterWebAppBuildOptions? buildOptions;
@@ -89,6 +99,7 @@ class FlutterFirebaseWebAppOptions {
   FlutterFirebaseWebAppOptions({
     String? path,
     this.deployDir,
+    this.publicDir,
     required this.deployOptions,
     this.buildOptions,
   }) {
@@ -96,17 +107,19 @@ class FlutterFirebaseWebAppOptions {
   }
 
   /// Returns a copy of these options, overriding [path], [deployDir],
-  /// [buildOptions] and/or [deployOptions] while keeping the rest
-  /// unchanged.
+  /// [publicDir], [buildOptions] and/or [deployOptions] while keeping the
+  /// rest unchanged.
   FlutterFirebaseWebAppOptions copyWith({
     String? path,
     String? deployDir,
+    String? publicDir,
     FlutterWebAppBuildOptions? buildOptions,
     FirebaseDeployOptions? deployOptions,
   }) {
     return FlutterFirebaseWebAppOptions(
       path: path ?? this.path,
       deployDir: deployDir ?? this.deployDir,
+      publicDir: publicDir ?? this.publicDir,
       buildOptions: buildOptions ?? this.buildOptions,
       deployOptions: deployOptions ?? this.deployOptions,
     );
@@ -137,7 +150,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
         path: options.path,
         deployDir: join(
           options.deployDir ?? firebaseDefaultHostingDir,
-          'public',
+          options.publicDir ?? firebaseDefaultPublicDir,
         ),
       ),
     );

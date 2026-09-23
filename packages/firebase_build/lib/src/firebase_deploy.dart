@@ -7,9 +7,16 @@ import 'package:tekartik_common_utils/common_utils_import.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
 
+/// Default `public` folder of a hosting target, relative to the hosting
+/// directory (the one holding `firebase.json`).
+const firebaseDefaultPublicDir = 'public';
+
 /// Default directory the built web app is copied into before Firebase
 /// deploy/serve: `<hosting dir>/public`.
-var firebaseDefaultWebDeployDir = join(firebaseDefaultHostingDir, 'public');
+var firebaseDefaultWebDeployDir = join(
+  firebaseDefaultHostingDir,
+  firebaseDefaultPublicDir,
+);
 
 /// Default deploy directory, i.e. [firebaseDefaultWebDeployDir].
 var firebaseDefaultDeployDir = firebaseDefaultWebDeployDir;
@@ -154,8 +161,9 @@ Future _firebaseWebAppPrepareHosting(
 }
 
 /// Copies the built web app from `[path]/build/[folder]` into
-/// `<deployDir>/public` (where [deployDir] defaults to
-/// [firebaseDefaultHostingDir] resolved against [path]), following the
+/// `<deployDir>/<publicDir>` (where [deployDir] defaults to
+/// [firebaseDefaultHostingDir] resolved against [path], and [publicDir] to
+/// [firebaseDefaultPublicDir]), following the
 /// copy rules declared in that build folder's `deploy.yaml` when present,
 /// copying the whole build folder otherwise.
 ///
@@ -166,12 +174,13 @@ Future _firebaseWebAppPrepareHosting(
 Future<void> firebaseWebAppBuildToDeploy(
   String path, {
   String? deployDir,
+  String? publicDir,
   String folder = 'web',
 }) async {
   var buildFolder = join(path, 'build', folder);
   deployDir = join(
     _fixFolder(path, deployDir ?? firebaseDefaultHostingDir),
-    'public',
+    publicDir ?? firebaseDefaultPublicDir,
   );
 
   var buildDir = Directory(buildFolder);

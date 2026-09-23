@@ -65,6 +65,11 @@ installed and logged in. Dart VM only.
   `Cross-Origin-Opener-Policy: same-origin` headers. A second hosting folder
   (`deploy/firebase/hosting_wasm`) with its own `firebase.json` is how you
   switch between hosting configurations: pass it as `deployDir`.
+* A firebase folder shared with the functions and the rules of the project
+  (its `firebase.json` declaring them all) is a `deployDir` outside the app
+  (`../../packages/my_firebase`); give each app hosted there its own
+  `publicDir` (`public/admin_app`, the `"public"` of its target), the
+  default being `public` (`firebaseDefaultPublicDir`).
 * `FirebaseDeployOptions(projectId:, hostingId:, target:)`: `projectId` is
   the firebase project (`--project`), `hostingId` the hosting site id (the
   default site is the project id; extra sites have their own), `target` the
@@ -80,11 +85,13 @@ installed and logged in. Dart VM only.
 
 ### The builder
 
-* `FlutterFirebaseWebAppOptions({path, deployDir, deployOptions, buildOptions})`:
+* `FlutterFirebaseWebAppOptions({path, deployDir, publicDir, deployOptions, buildOptions})`:
   `path` is the flutter app (default `'.'`, made absolute), `deployOptions`
   is required, `buildOptions` is the `FlutterWebAppBuildOptions` (`wasm:`,
   `target:`) of the underlying flutter build, `deployDir` the hosting
-  folder (relative to `path` unless absolute). `copyWith(...)` on all four.
+  folder (relative to `path` unless absolute), `publicDir` the `public`
+  folder of the target, relative to `deployDir`. `copyWith(...)` on all
+  five.
 * `FlutterFirebaseWebAppBuilder(options:)`: `build()` (flutter build +
   copy to `public/`), `copyBuildToDeploy()` (copy only), `deploy()`,
   `serve()` (hosting emulator, `firebase emulators:start --only
@@ -101,7 +108,8 @@ installed and logged in. Dart VM only.
   build itself is not covered). One controller can serve several calls.
 * Function style, same behaviour without a builder object:
   `flutterWebAppBuild(dir)` (plain `flutter build web`),
-  `firebaseWebAppBuildToDeploy(dir, deployDir:, folder:)` (`folder` is the
+  `firebaseWebAppBuildToDeploy(dir, deployDir:, publicDir:, folder:)`
+  (`folder` is the
   `build/` subfolder, `'web'`), `firebaseWebAppDeploy(dir, options,
   deployDir:, controller:)`, `firebaseWebAppServe(...)`,
   `flutterWebAppBuildAndDeploy(dir, firebaseDeployOptions:, deployDir:)`,
