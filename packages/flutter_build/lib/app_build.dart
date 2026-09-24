@@ -5,4 +5,12 @@ export 'src/app_build_web.dart'
         FlutterWebAppBuildOptions,
         FlutterWebRenderer,
         FlutterWebAppBuilder,
-        FlutterWebAppOptions;
+        FlutterWebAppOptions,
+        flutterWebAppsBuildSize;
+export 'src/web_build_size.dart'
+    show
+        FlutterWebBuildFile,
+        FlutterWebBuildSize,
+        flutterWebBuildSizeMarkdownReport,
+        flutterWebBuildSizeMarkdownTable,
+        flutterWebBuildSizeWriteReport;

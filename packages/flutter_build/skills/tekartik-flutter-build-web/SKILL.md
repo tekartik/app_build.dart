@@ -3,12 +3,16 @@ name: tekartik-flutter-build-web
 description: >-
   Use when a Dart tool/ script, dev menu or CI step must build a Flutter web
   app (flutter build web, --wasm, --target), copy the build to a deploy
-  folder, serve it locally, run it in Chrome, report the main.dart.js size
-  or deploy it with a WebAppDeployer, with package:tekartik_flutter_build:
+  folder, serve it locally, run it in Chrome, report or compare the js and
+  wasm size of one or several apps (markdown report) or deploy it with a
+  WebAppDeployer, with package:tekartik_flutter_build:
   FlutterWebAppBuilder (build, buildOnly, buildToDeploy, serve, run, deploy,
-  buildAndServe, buildAndDeploy, clean, reportJsSize, generateVersion,
-  bumpVersion), FlutterWebAppOptions, FlutterWebAppBuildOptions,
-  FlutterWebRenderer, flutterWebAppClean, BuildShellController, the
+  buildAndServe, buildAndDeploy, clean, reportJsSize, readBuildSize,
+  generateVersion, bumpVersion), FlutterWebAppOptions,
+  FlutterWebAppBuildOptions, FlutterWebRenderer, flutterWebAppClean,
+  FlutterWebBuildSize, flutterWebAppsBuildSize,
+  flutterWebBuildSizeMarkdownTable, flutterWebBuildSizeWriteReport,
+  BuildShellController, the
   menuFlutterWebAppBuilderContent / menuFlutterWebAppContent dev menu items
   and the build/web/deploy.yaml copy rules.
 ---
@@ -40,7 +44,10 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   too when you name a `WebAppDeployer`, and `dev_build` for the menus.
 * Imports: `package:tekartik_flutter_build/app_build.dart` exports
   `FlutterWebAppBuilder`, `FlutterWebAppOptions`,
-  `FlutterWebAppBuildOptions`, `FlutterWebRenderer`, `flutterWebAppClean`
+  `FlutterWebAppBuildOptions`, `FlutterWebRenderer`, `flutterWebAppClean`,
+  the build size API (`FlutterWebBuildSize`, `FlutterWebBuildFile`,
+  `flutterWebAppsBuildSize`, `flutterWebBuildSizeMarkdownTable`,
+  `flutterWebBuildSizeMarkdownReport`, `flutterWebBuildSizeWriteReport`)
   and re-exports `CommonAppBuilder`/`CommonAppBuilderExt` of
   `tekartik_common_build`. `package:tekartik_flutter_build/app_build_menu.dart`
   re-exports it and adds `menuFlutterWebAppBuilderContent`,
@@ -76,9 +83,14 @@ firebase hosting variant lives in `tekartik_firebase_build`.
 
 * `buildOnly()`: `generateVersionIfNeeded()` (rewrites `lib/src/version.dart`
   only if it already exists, see `tekartik_common_build`), then
-  `flutter build web [--wasm] [--target x]`, then `reportJsSize()` (prints
-  `main.dart.js (1.234 MB)`, `0 B` when not found; the file may sit in a
-  subfolder with wasm builds).
+  `flutter build web [--wasm] [--target x] [--no-pub]` (`--no-pub` when
+  `hasPubGetRun()`, workspace aware), then `reportJsSize()`.
+* `reportJsSize()` prints the last build size, raw and gzipped:
+  `main.dart.js (1.808 MB, gzip 549.423 KB)` (plus `, N parts` with
+  deferred parts) and, for a `--wasm` build, `main.dart.wasm (1.469 MB,
+  gzip 559.609 KB, with main.dart.mjs)`; `<name>: not built` without a
+  build. `readBuildSize({buildDuration})` returns it as a
+  `FlutterWebBuildSize` instead.
 * `build()`: `buildOnly()` then the copy to `deployDir`, also available
   alone as `buildToDeploy()`: when `build/web/deploy.yaml` exists its
   `files:`/`exclude:` rules (`fsDeploy` of `tekartik_deploy`) select what is
@@ -103,6 +115,32 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   throws until a shell was set. One controller per builder.
 * Every step runs a shell and throws `ShellException` on failure; the
   flutter output goes to stdout as it happens.
+
+### Build size
+
+* `FlutterWebBuildSize.read(path, {name, buildDuration})` reads `build/web`
+  of the app at `path` (no build): `jsFiles` (`main.dart.js` first, then its
+  deferred parts `main.dart.js_*.part.js`), `wasmFiles` (`main.dart.wasm`
+  first, deferred `.wasm` parts, the `main.dart.mjs` loader last, empty
+  without `--wasm`), each a `FlutterWebBuildFile` (`name` relative to
+  `build/web`, `size`, `gzipSize`). Totals: `jsSize`, `jsGzipSize`,
+  `wasmSize`, `wasmGzipSize` (loader included), `jsPartCount`; flags
+  `isBuilt`, `hasWasm`. `name` defaults to the app folder name.
+* Only the dart output is counted: the engine (`canvaskit/`, `skwasm`) is
+  the same for every app. A `--wasm` build still has `main.dart.js`, the
+  fallback of browsers without wasm GC. `flutter build web` clears
+  `build/web`, so a later non-wasm build leaves no stale wasm.
+* `flutterWebAppsBuildSize(paths, {build: true, buildOptions})` builds each
+  app in turn (`buildOnly()`, timed) then reads its size; `build: false`
+  only reads the last builds. A failing build throws and stops the run.
+* `flutterWebBuildSizeMarkdownTable(sizes)`: one row per app, columns
+  `app | js | js gzip | js parts` plus `wasm | wasm gzip` when a build has
+  wasm and `build` (seconds) when a duration is known; `not built` rows.
+  `flutterWebBuildSizeMarkdownReport(sizes, {title, now})` adds a `# title`
+  and the date. `flutterWebBuildSizeWriteReport(sizes, dir:, name:, title:,
+  now:)` writes it to `<dir>/<name>_YYYY_MM_DD.md` (default name
+  `build_web_size_report`), replacing the same day report, and returns the
+  file.
 
 ### Dev menu
 
@@ -206,6 +244,34 @@ Future<void> main(List<String> arguments) async {
     menuFlutterWebAppContent(builders: [dev, prod]);
     item('bump version', () => dev.bumpVersion());
   });
+}
+```
+
+### Compare the web size of several apps
+
+```dart
+// tool/web_size.dart — dart run tool/web_size.dart [--wasm] [--no-build]
+import 'package:tekartik_flutter_build/app_build.dart';
+
+Future<void> main(List<String> arguments) async {
+  var sizes = await flutterWebAppsBuildSize(
+    ['../app_a', '../app_b'],
+    build: !arguments.contains('--no-build'),
+    buildOptions: FlutterWebAppBuildOptions(
+      wasm: arguments.contains('--wasm'),
+    ),
+  );
+  print(flutterWebBuildSizeMarkdownTable(sizes));
+  // .local/web_size_2026_09_24.md
+  var file = await flutterWebBuildSizeWriteReport(
+    sizes,
+    dir: '.local',
+    name: 'web_size',
+  );
+  print('Report written to ${file.path}');
+  for (var size in sizes.where((size) => size.hasWasm)) {
+    print('${size.name}: wasm gzip ${size.wasmGzipSize} bytes');
+  }
 }
 ```
 

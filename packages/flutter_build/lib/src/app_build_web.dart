@@ -3,10 +3,10 @@ import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
 import 'package:tekartik_common_build/common_app_builder.dart';
-import 'package:tekartik_common_build/formatter.dart' as f;
 import 'package:tekartik_common_build/serve_dir.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_flutter_build/src/controller.dart';
+import 'package:tekartik_flutter_build/src/web_build_size.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
 
 String _fixFolder(String path, String folder) {
@@ -168,7 +168,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
 
   /// Runs `flutter build web` (regenerating the version file first if
   /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm` and
-  /// `target` settings, then logs the built JS bundle size (see
+  /// `target` settings, then logs the built JS (and wasm) size (see
   /// [reportJsSize]). Passes `--no-pub` when [hasPubGetRun] reports `pub
   /// get` already ran for [path] (or its workspace).
   Future<void> buildOnly() async {
@@ -198,19 +198,6 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     await shell.run('flutter build web$wasmOptions$targetOptions$noPubOptions');
 
     await reportJsSize();
-  }
-
-  File? _findJsFile() {
-    var file = File(join(path, 'build', 'web', 'main.dart.js'));
-    if (file.existsSync()) return file;
-    var dir = Directory(join(path, 'build', 'web'));
-    if (!dir.existsSync()) return null;
-    for (var entity in dir.listSync(recursive: true)) {
-      if (entity is File && entity.path.endsWith('main.dart.js')) {
-        return entity;
-      }
-    }
-    return null;
   }
 
   var _infoShownOnce = false;
@@ -265,11 +252,19 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     );
   }
 
-  /// Logs the size of the built `main.dart.js` bundle (searched for under
-  /// `build/web`) to stdout, or `0` if it can't be found.
+  /// Reads the size of the last build (see [FlutterWebBuildSize.read]),
+  /// [buildDuration] being how long it took when known.
+  Future<FlutterWebBuildSize> readBuildSize({Duration? buildDuration}) =>
+      FlutterWebBuildSize.read(path, buildDuration: buildDuration);
+
+  /// Logs the size of the built javascript (`main.dart.js` and its deferred
+  /// parts) and, for a `--wasm` build, of the WebAssembly, raw and gzipped,
+  /// to stdout, see [FlutterWebBuildSize.toLines].
   Future<void> reportJsSize() async {
-    var file = _findJsFile();
-    stdout.writeln('main.dart.js (${f.formatSize(file?.lengthSync() ?? 0)})');
+    var size = await readBuildSize();
+    for (var line in size.toLines()) {
+      stdout.writeln(line);
+    }
   }
 
   /// Runs `flutter clean` in the project directory (see
@@ -325,6 +320,35 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
 
     await deploy();
   }
+}
+
+/// Builds, unless [build] is false, then reads the build size of the flutter
+/// apps at [paths], in order.
+///
+/// Each app is built with [FlutterWebAppBuilder.buildOnly] and
+/// [buildOptions] (`FlutterWebAppBuildOptions(wasm: true)` for the wasm size
+/// too). Without building, the last build of each app is read. Print or save
+/// the result with [flutterWebBuildSizeMarkdownTable] or
+/// [flutterWebBuildSizeWriteReport].
+Future<List<FlutterWebBuildSize>> flutterWebAppsBuildSize(
+  List<String> paths, {
+  bool build = true,
+  FlutterWebAppBuildOptions? buildOptions,
+}) async {
+  var sizes = <FlutterWebBuildSize>[];
+  for (var path in paths) {
+    var builder = FlutterWebAppBuilder(
+      options: FlutterWebAppOptions(path: path, buildOptions: buildOptions),
+    );
+    Duration? buildDuration;
+    if (build) {
+      var stopwatch = Stopwatch()..start();
+      await builder.buildOnly();
+      buildDuration = stopwatch.elapsed;
+    }
+    sizes.add(await builder.readBuildSize(buildDuration: buildDuration));
+  }
+  return sizes;
 }
 
 /// Runs `flutter clean` in [directory].

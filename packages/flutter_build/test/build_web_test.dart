@@ -36,6 +36,9 @@ Future<void> main() async {
           ),
         );
         await builder.buildOnly();
+        var size = await builder.readBuildSize();
+        expect(size.jsFiles.first.name, 'main.dart.js');
+        expect(size.hasWasm, isFalse);
       });
       test('build wasm', () async {
         var builder = FlutterWebAppBuilder(
@@ -45,6 +48,10 @@ Future<void> main() async {
           ),
         );
         await builder.buildOnly();
+        var size = await builder.readBuildSize();
+        expect(size.hasWasm, isTrue);
+        expect(size.wasmFiles.first.name, 'main.dart.wasm');
+        expect(size.jsFiles.first.name, 'main.dart.js');
       });
     },
     skip: !isFlutterSupportedSync,
