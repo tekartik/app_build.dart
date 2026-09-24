@@ -4,6 +4,7 @@ import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
 import 'package:tekartik_common_build/common_app_builder.dart';
 import 'package:tekartik_common_build/formatter.dart' as f;
+import 'package:tekartik_common_build/serve_dir.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
 import 'package:tekartik_flutter_build/src/controller.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
@@ -302,15 +303,13 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   /// Serves the deploy directory locally over HTTP on
   /// [FlutterWebAppOptions.webPort], using `dhttpd` (activating it first
   /// if needed) with cross-origin isolation headers set for WASM/threaded
-  /// support.
+  /// support. See `tekartik_common_build`'s `DirServeBuilder`.
   Future<void> serve() async {
-    await checkAndActivatePackage('dhttpd');
-    stdout.writeln('http://localhost:${options.webPort}');
     var deployDir = _fixFolder(path, options.deployDir);
-    var shell = _shell;
-    await shell.run(
-      'dart pub global run dhttpd:dhttpd --path ${shellArgument(deployDir)} --port ${options.webPort} --headers=Cross-Origin-Embedder-Policy=credentialless;Cross-Origin-Opener-Policy=same-origin',
-    );
+    await DirServeBuilder(
+      ServeDirOptions(path: deployDir, port: options.webPort, secure: true),
+      shell: _shell,
+    ).serve();
   }
 
   /// Runs [build] followed by [serve].
