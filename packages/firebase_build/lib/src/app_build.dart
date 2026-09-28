@@ -93,28 +93,39 @@ class FlutterFirebaseWebAppOptions {
   /// Firebase deploy target/project options.
   final FirebaseDeployOptions deployOptions;
 
+  /// Local port of `flutter run -d chrome` ([FlutterFirebaseWebAppBuilder.run])
+  /// and of the dhttpd server of the inner builder (`webAppBuilder.serve()`),
+  /// `null` for the default of [FlutterWebAppOptions.webPort] (8080). Fix it
+  /// so that the browser keeps the same origin, hence its local data, from
+  /// one run to the next. The hosting emulator of
+  /// [FlutterFirebaseWebAppBuilder.serve] listens on the port of
+  /// `firebase.json`, not on this one.
+  final int? webPort;
+
   /// Creates options for the Flutter project at [path] (defaults to the
-  /// current directory), deployed with [deployOptions]. [deployDir] and
-  /// [buildOptions] default to `null` (see their field docs).
+  /// current directory), deployed with [deployOptions]. [deployDir],
+  /// [buildOptions] and [webPort] default to `null` (see their field docs).
   FlutterFirebaseWebAppOptions({
     String? path,
     this.deployDir,
     this.publicDir,
     required this.deployOptions,
     this.buildOptions,
+    this.webPort,
   }) {
     this.path = normalize(absolute(path ?? '.'));
   }
 
   /// Returns a copy of these options, overriding [path], [deployDir],
-  /// [publicDir], [buildOptions] and/or [deployOptions] while keeping the
-  /// rest unchanged.
+  /// [publicDir], [buildOptions], [deployOptions] and/or [webPort] while
+  /// keeping the rest unchanged.
   FlutterFirebaseWebAppOptions copyWith({
     String? path,
     String? deployDir,
     String? publicDir,
     FlutterWebAppBuildOptions? buildOptions,
     FirebaseDeployOptions? deployOptions,
+    int? webPort,
   }) {
     return FlutterFirebaseWebAppOptions(
       path: path ?? this.path,
@@ -122,6 +133,7 @@ class FlutterFirebaseWebAppOptions {
       publicDir: publicDir ?? this.publicDir,
       buildOptions: buildOptions ?? this.buildOptions,
       deployOptions: deployOptions ?? this.deployOptions,
+      webPort: webPort ?? this.webPort,
     );
   }
 }
@@ -152,6 +164,7 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
           options.deployDir ?? firebaseDefaultHostingDir,
           options.publicDir ?? firebaseDefaultPublicDir,
         ),
+        webPort: options.webPort,
       ),
     );
   }
@@ -169,6 +182,32 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
   /// Removes the built Flutter web app output for this project.
   Future<void> clean() async {
     await flutterWebAppClean(options.path);
+  }
+
+  /// Runs the app in Chrome from its source (`flutter run -d chrome`) on
+  /// [FlutterFirebaseWebAppOptions.webPort], `--wasm` and `--target` taken
+  /// from the build options, [args] appended, see [FlutterWebAppBuilder.run].
+  /// Blocks until `flutter run` exits.
+  ///
+  /// Without a [controller] (or with `interactive: true`) stdin is forwarded
+  /// so that the `flutter run` keys work (`r` hot reload, `R` hot restart,
+  /// `q` quit) and released, terminated, afterwards: make it the last step
+  /// of a script. With a [controller] (a menu, which owns stdin) the command
+  /// runs without stdin and `controller.cancel()` stops it.
+  Future<void> run({
+    List<String> args = const <String>[],
+    bool? interactive,
+    FirebaseWebAppActionController? controller,
+  }) async {
+    var webAppBuilder = _flutterWebAppBuilderOnly;
+    if (controller != null) {
+      var shell = Shell(workingDirectory: path);
+      controller.shell = shell;
+      webAppBuilder = webAppBuilder.copyWith(
+        controller: BuildShellController(shell: shell),
+      );
+    }
+    await webAppBuilder.run(args: args, interactive: interactive);
   }
 
   /// Copies the built output to the deploy directory then runs [action]

@@ -50,6 +50,10 @@ void menuFirebaseWebAppBuilderContent({
     cancel();
     await builder.buildAndServe(controller: actionController);
   });
+  item('run (flutter run -d chrome)', () async {
+    cancel();
+    await builder.run(controller: actionController);
+  });
   item('clean', () async {
     cancel();
     await builder.clean();

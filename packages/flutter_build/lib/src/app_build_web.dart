@@ -46,6 +46,68 @@ class FlutterWebAppBuildOptions {
   /// Creates build options with the given [renderer], [wasm] flag and
   /// [target] entry point, each defaulting to `null` (tool defaults).
   FlutterWebAppBuildOptions({this.renderer, this.wasm, this.target});
+
+  /// Returns a copy of these options, overriding [renderer], [wasm] and/or
+  /// [target] while keeping the rest unchanged (`copyWith(wasm: true)` for
+  /// the WebAssembly variant of the same entry point).
+  FlutterWebAppBuildOptions copyWith({
+    FlutterWebRenderer? renderer,
+    bool? wasm,
+    String? target,
+  }) {
+    return FlutterWebAppBuildOptions(
+      renderer: renderer ?? this.renderer,
+      wasm: wasm ?? this.wasm,
+      target: target ?? this.target,
+    );
+  }
+}
+
+/// The `flutter build web` command of [FlutterWebAppBuilder.buildOnly]:
+/// `--wasm` when [wasm], `--target` [target] when set and `--no-pub` when
+/// [noPub].
+String flutterWebBuildCommand({
+  bool wasm = false,
+  String? target,
+  bool noPub = false,
+}) {
+  var sb = StringBuffer('flutter build web');
+  if (wasm) {
+    sb.write(' --wasm');
+  }
+  if (target != null) {
+    sb.write(' --target ${shellArgument(target)}');
+  }
+  if (noPub) {
+    sb.write(' --no-pub');
+  }
+  return sb.toString();
+}
+
+/// The `flutter run -d chrome` command of [FlutterWebAppBuilder.run]: on
+/// [webPort], `--wasm` when [wasm], `--target` [target] when set, `--no-pub`
+/// when [noPub], then [args] (quoted as needed).
+String flutterWebRunCommand({
+  required int webPort,
+  bool wasm = false,
+  String? target,
+  bool noPub = false,
+  List<String> args = const <String>[],
+}) {
+  var sb = StringBuffer('flutter run -d chrome --web-port $webPort');
+  if (wasm) {
+    sb.write(' --wasm');
+  }
+  if (target != null) {
+    sb.write(' --target ${shellArgument(target)}');
+  }
+  if (noPub) {
+    sb.write(' --no-pub');
+  }
+  if (args.isNotEmpty) {
+    sb.write(' ${shellArguments(args)}');
+  }
+  return sb.toString();
 }
 
 /// Options for building, serving and deploying a Flutter web app, used by
@@ -78,16 +140,18 @@ class FlutterWebAppOptions {
     this.webPort = webPort ?? webAppServeWebPortDefault;
   }
 
-  /// Returns a copy of these options, overriding [path], [deployDir]
-  /// and/or [buildOptions] while keeping the rest unchanged.
+  /// Returns a copy of these options, overriding [path], [deployDir],
+  /// [webPort] and/or [buildOptions] while keeping the rest unchanged.
   FlutterWebAppOptions copyWith({
     String? path,
     String? deployDir,
+    int? webPort,
     FlutterWebAppBuildOptions? buildOptions,
   }) {
     return FlutterWebAppOptions(
       path: path ?? this.path,
       deployDir: deployDir ?? this.deployDir,
+      webPort: webPort ?? this.webPort,
       buildOptions: buildOptions ?? this.buildOptions,
     );
   }
@@ -189,13 +253,13 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
         default:
       }
     }*/
-    var wasmOptions = wasm ? ' --wasm' : '';
-    var targetOptions = '';
-    if (buildOptions?.target != null) {
-      targetOptions = ' --target ${buildOptions!.target}';
-    }
-    var noPubOptions = await hasPubGetRun() ? ' --no-pub' : '';
-    await shell.run('flutter build web$wasmOptions$targetOptions$noPubOptions');
+    await shell.run(
+      flutterWebBuildCommand(
+        wasm: wasm,
+        target: buildOptions?.target,
+        noPub: await hasPubGetRun(),
+      ),
+    );
 
     await reportJsSize();
   }
@@ -273,15 +337,50 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     await flutterWebAppClean(options.path);
   }
 
-  /// Runs the app in Chrome via `flutter run -d chrome`, on
-  /// [FlutterWebAppOptions.webPort]. Passes `--no-pub` when [hasPubGetRun]
-  /// reports `pub get` already ran for [path] (or its workspace).
-  Future<void> run() async {
-    var shell = _shell;
-    var noPubOptions = await hasPubGetRun() ? ' --no-pub' : '';
-    await shell.run(
-      'flutter run -d chrome --web-port ${options.webPort}$noPubOptions',
+  /// Runs the app in Chrome (`flutter run -d chrome`) on
+  /// [FlutterWebAppOptions.webPort], with the
+  /// [FlutterWebAppOptions.buildOptions] of the build: `--wasm` when `wasm`
+  /// is set, `--target` when `target` is set, plus `--no-pub` when
+  /// [hasPubGetRun] reports `pub get` already ran for [path] (or its
+  /// workspace). [args] are appended to the command (`--release`,
+  /// `--dart-define=...`). Blocks until `flutter run` exits.
+  ///
+  /// When [interactive] (the default without a [controller]), stdin is
+  /// forwarded to `flutter run` so that its keys work (`r` hot reload, `R`
+  /// hot restart, `q` quit), through `sharedStdIn`, which is terminated once
+  /// `flutter run` exits so that the tool can exit too: nothing reads stdin
+  /// in the process after that, make it the last step of a script. With a
+  /// [controller] (the menus, which own stdin) or `interactive: false`, the
+  /// command runs without stdin and `controller.cancel()` stops it.
+  Future<void> run({
+    List<String> args = const <String>[],
+    bool? interactive,
+  }) async {
+    var buildOptions = options.buildOptions;
+    var command = flutterWebRunCommand(
+      webPort: options.webPort,
+      wasm: buildOptions?.wasm ?? false,
+      target: buildOptions?.target,
+      noPub: await hasPubGetRun(),
+      args: args,
     );
+    var controller = this.controller;
+    if (interactive ?? controller == null) {
+      var shell = Shell(workingDirectory: path, stdin: sharedStdIn);
+      controller?.shell = shell;
+      try {
+        await shell.run(command);
+      } finally {
+        // Release stdin, the tool would never exit otherwise.
+        try {
+          await sharedStdIn.terminate();
+        } catch (_) {
+          // Already terminated.
+        }
+      }
+    } else {
+      await _shell.run(command);
+    }
   }
 
   /// Deploys the contents of the deploy directory using [deployer].

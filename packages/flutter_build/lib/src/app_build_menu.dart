@@ -3,8 +3,6 @@ import 'package:dev_build/shell.dart';
 import 'package:path/path.dart';
 import 'package:tekartik_flutter_build/app_build.dart';
 
-import 'controller.dart';
-
 /// Registers dev-menu items (build, run, serve, deploy, clean, generate
 /// version, report JS size, and a `'cancel current build/server'` item)
 /// for the given [builder]. `'build and deploy'` and `'deploy'` items are

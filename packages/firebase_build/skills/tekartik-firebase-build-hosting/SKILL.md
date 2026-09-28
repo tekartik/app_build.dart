@@ -85,27 +85,36 @@ installed and logged in. Dart VM only.
 
 ### The builder
 
-* `FlutterFirebaseWebAppOptions({path, deployDir, publicDir, deployOptions, buildOptions})`:
+* `FlutterFirebaseWebAppOptions({path, deployDir, publicDir, deployOptions, buildOptions, webPort})`:
   `path` is the flutter app (default `'.'`, made absolute), `deployOptions`
   is required, `buildOptions` is the `FlutterWebAppBuildOptions` (`wasm:`,
-  `target:`) of the underlying flutter build, `deployDir` the hosting
-  folder (relative to `path` unless absolute), `publicDir` the `public`
-  folder of the target, relative to `deployDir`. `copyWith(...)` on all
-  five.
+  `target:`) of the underlying flutter build and of `run()`, `deployDir`
+  the hosting folder (relative to `path` unless absolute), `publicDir` the
+  `public` folder of the target, relative to `deployDir`, `webPort` the port
+  of `run()` and of the inner dhttpd `webAppBuilder.serve()` (default 8080,
+  the hosting emulator keeps the port of `firebase.json`), fixed so that the
+  browser keeps the same origin, hence its local data. `copyWith(...)` on
+  all six.
 * `FlutterFirebaseWebAppBuilder(options:)`: `build()` (flutter build +
   copy to `public/`), `copyBuildToDeploy()` (copy only), `deploy()`,
   `serve()` (hosting emulator, `firebase emulators:start --only
   hosting:<target>`, blocks), `buildAndDeploy()`, `buildAndServe()`,
-  `clean()` (`flutter clean`). `deploy`/`serve` copy the existing build to
-  `public/` again first, so one `build()` then `deploy()` on several targets
-  sharing the build works. `target` is `options.deployOptions.target`;
-  `webAppBuilder` is the inner `FlutterWebAppBuilder` (for `run()`,
-  `reportJsSize()`, the dhttpd `serve()`); `generateVersion()`,
-  `generateVersionIfNeeded()`, `bumpVersion()` apply (`CommonAppBuilder`).
+  `clean()` (`flutter clean`), `run({args, interactive, controller})`
+  (`flutter run -d chrome --web-port <webPort>` on the source, `--wasm` and
+  `--target` from `buildOptions`, `args` appended, blocks; stdin forwarded
+  for the `r`/`R`/`q` keys then terminated unless a `controller` is given
+  or `interactive: false`, so last in a script, `interactive: false` in a
+  menu item). `deploy`/`serve` copy the existing build to `public/` again
+  first, so one `build()` then `deploy()` on several targets sharing the
+  build works. `target` is `options.deployOptions.target`; `webAppBuilder`
+  is the inner `FlutterWebAppBuilder` (for `reportJsSize()`, the dhttpd
+  `serve()`); `generateVersion()`, `generateVersionIfNeeded()`,
+  `bumpVersion()` apply (`CommonAppBuilder`).
 * Cancelling: `FirebaseWebAppActionController()` passed as `controller:` to
-  `build`, `deploy`, `serve`, `buildAndDeploy`, `buildAndServe`;
-  `controller.cancel()` kills the running `firebase` command (the flutter
-  build itself is not covered). One controller can serve several calls.
+  `build`, `deploy`, `serve`, `buildAndDeploy`, `buildAndServe`, `run`;
+  `controller.cancel()` kills the running `firebase` command or `flutter
+  run` (the flutter build itself is not covered). One controller can serve
+  several calls.
 * Function style, same behaviour without a builder object:
   `flutterWebAppBuild(dir)` (plain `flutter build web`),
   `firebaseWebAppBuildToDeploy(dir, deployDir:, publicDir:, folder:)`

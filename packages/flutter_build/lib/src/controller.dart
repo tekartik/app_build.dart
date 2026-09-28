@@ -17,15 +17,13 @@ class BuildShellController {
   Shell get shell => _shell!;
   Shell? _shell;
 
+  /// Sets the shell of the next command, [cancel] then kills it.
+  set shell(Shell shell) {
+    _shell = shell;
+  }
+
   /// Kills the current shell's process with `SIGKILL`, if one is set.
   void cancel() {
     _shell?.kill(ProcessSignal.sigkill);
-  }
-}
-
-/// Private extension to set the shell
-extension BuildShellControllerPrvExt on BuildShellController {
-  set shell(Shell shell) {
-    _shell = shell;
   }
 }

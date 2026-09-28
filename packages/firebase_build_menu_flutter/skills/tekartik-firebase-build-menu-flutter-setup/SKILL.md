@@ -53,7 +53,8 @@ declarations for firebase hosting builders. Dart VM only (`dart run`).
 * `menuFirebaseWebAppBuilderContent(builder:)` declares, in the current
   menu: an `enter` banner (path, target, project id, hosting id), `cancel
   build/serve/deploy`, `build and deploy`, `build`, `serve` (hosting
-  emulator), `deploy`, `build and serve`, `clean`, and a `web` submenu with
+  emulator), `deploy`, `build and serve`, `run (flutter run -d chrome)` (not
+  interactive, the menu keeps stdin), `clean`, and a `web` submenu with
   the plain flutter web items (`run` in chrome, `serve` with dhttpd,
   `generateVersion`, `bumpVersion`, `Js size`...). Actions cancel the
   previous firebase action first through a shared

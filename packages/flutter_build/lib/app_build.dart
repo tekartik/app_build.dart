@@ -7,6 +7,7 @@ export 'src/app_build_web.dart'
         FlutterWebAppBuilder,
         FlutterWebAppOptions,
         flutterWebAppsBuildSize;
+export 'src/controller.dart' show BuildShellController;
 export 'src/web_build_size.dart'
     show
         FlutterWebBuildFile,

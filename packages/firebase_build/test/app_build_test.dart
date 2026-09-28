@@ -35,5 +35,30 @@ void main() {
       expect(options.copyWith().publicDir, join('public', 'my_app'));
       expect(options.copyWith(publicDir: 'www').publicDir, 'www');
     });
+
+    test('webPort', () {
+      var options = FlutterFirebaseWebAppOptions(
+        deployOptions: deployOptions,
+        buildOptions: FlutterWebAppBuildOptions(wasm: true),
+      );
+      expect(options.webPort, isNull);
+      expect(
+        FlutterFirebaseWebAppBuilder(
+          options: options,
+        ).webAppBuilder.options.webPort,
+        8080,
+      );
+      var fixed = options.copyWith(webPort: 8063);
+      expect(fixed.webPort, 8063);
+      expect(fixed.copyWith(publicDir: 'www').webPort, 8063);
+      var builder = FlutterFirebaseWebAppBuilder(
+        options: fixed.copyWith(
+          buildOptions: options.buildOptions!.copyWith(target: 'lib/a.dart'),
+        ),
+      );
+      expect(builder.webAppBuilder.options.webPort, 8063);
+      expect(builder.webAppBuilder.options.buildOptions!.wasm, isTrue);
+      expect(builder.webAppBuilder.options.buildOptions!.target, 'lib/a.dart');
+    });
   });
 }

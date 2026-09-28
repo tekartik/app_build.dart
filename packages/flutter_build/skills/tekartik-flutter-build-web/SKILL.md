@@ -48,10 +48,10 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   the build size API (`FlutterWebBuildSize`, `FlutterWebBuildFile`,
   `flutterWebAppsBuildSize`, `flutterWebBuildSizeMarkdownTable`,
   `flutterWebBuildSizeMarkdownReport`, `flutterWebBuildSizeWriteReport`)
-  and re-exports `CommonAppBuilder`/`CommonAppBuilderExt` of
-  `tekartik_common_build`. `package:tekartik_flutter_build/app_build_menu.dart`
-  re-exports it and adds `menuFlutterWebAppBuilderContent`,
-  `menuFlutterWebAppContent` and `BuildShellController`.
+  `BuildShellController` and re-exports `CommonAppBuilder`/
+  `CommonAppBuilderExt` of `tekartik_common_build`.
+  `package:tekartik_flutter_build/app_build_menu.dart` re-exports it and
+  adds `menuFlutterWebAppBuilderContent` and `menuFlutterWebAppContent`.
 * Needs the `flutter` command on the PATH (`isFlutterSupportedSync` from
   `package:process_run/shell.dart` tells) and, for `serve`, `dart pub
   global` access to activate `dhttpd`.
@@ -63,14 +63,16 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   normalized); `deployDir` (default `deploy/web`, `webAppDeployDirDefault`)
   is where `build/web` is copied, relative to `path` unless absolute;
   `webPort` (default 8080, `webAppServeWebPortDefault`) is used by `run` and
-  `serve`. `copyWith(path:, deployDir:, buildOptions:)` (not `webPort`)
-  derives a variant.
+  `serve`, fix it so that the browser keeps the same origin, hence its local
+  data, from one run to the next. `copyWith(path:, deployDir:, webPort:,
+  buildOptions:)` derives a variant.
 * `FlutterWebAppBuildOptions({renderer, wasm, target})`: `wasm: true` adds
-  `--wasm`; `target` is the entry point passed as `--target`
+  `--wasm` (build and run); `target` is the entry point passed as `--target`
   (`lib/main_prod.dart`), `lib/main.dart` when null. `renderer`
   (`FlutterWebRenderer.canvasKit`; `html` is deprecated) is accepted for
   compatibility but no longer passed to flutter, which dropped
-  `--web-renderer`.
+  `--web-renderer`. `copyWith(renderer:, wasm:, target:)` derives a variant
+  (`buildOptions.copyWith(wasm: true)` to run the same entry point as wasm).
 * `FlutterWebAppBuilder({options, deployer, controller, target})`: `target`
   is a free label (`'dev'`, `'prod'`) used by the menus, not a flutter
   option; `deployer` is a `WebAppDeployer` (`tekartik_web_publish`:
@@ -101,9 +103,21 @@ firebase hosting variant lives in `tekartik_firebase_build`.
 * `serve()`: activates `dhttpd` if needed then serves `deployDir` on
   `webPort` with `Cross-Origin-Embedder-Policy: credentialless` and
   `Cross-Origin-Opener-Policy: same-origin` headers (needed for wasm and
-  multi-threading), blocks until killed. `run()`: `flutter run -d chrome
-  --web-port <webPort>` on the source, blocks. `buildAndServe()` and
+  multi-threading), blocks until killed. `buildAndServe()` and
   `buildAndDeploy()` chain `build()` with `serve()`/`deploy()`.
+* `run({args, interactive})`: `flutter run -d chrome --web-port <webPort>
+  [--wasm] [--target x] [--no-pub] <args>` on the source, `--wasm` and
+  `--target` from `buildOptions`, `args` appended (`['--release']`,
+  `['-t', 'lib/main_local.dart']`), blocks until `flutter run` exits.
+  Without a `controller` (or with `interactive: true`) stdin is forwarded so
+  that the `flutter run` keys work (`r` hot reload, `R` hot restart, `q`
+  quit) through `sharedStdIn`, terminated when `flutter run` exits so that
+  the script exits too: make `run()` the last step, nothing reads stdin
+  afterwards. With a `controller` (the menus own stdin) or `interactive:
+  false` the command runs without stdin and `controller.cancel()` kills it;
+  a menu item calling `run()` on a builder without controller must pass
+  `interactive: false` or the shared stdin throws `Subscriber already
+  listening`.
 * `deploy()`: `deployer.deploy(path: <absolute deployDir>)`.
 * `clean()` / `flutterWebAppClean(directory)`: `flutter clean`.
 * Versioning (from `CommonAppBuilderExt`): `generateVersion()`,
@@ -148,9 +162,10 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   `package:dev_build/menu/menu_io.dart` then
   `menuFlutterWebAppBuilderContent(builder: builder)` registers the items
   `cancel current build/server`, `build and deploy` (only with a deployer),
-  `build`, `build only (no copy to deploy)`, `run`, `serve`, `deploy`
-  (with a deployer), `build and serve`, `clean`, `generateVersion`,
-  `bumpVersion`, `Js size`; each action cancels the previous one first.
+  `build`, `build only (no copy to deploy)`, `run` (not interactive, the
+  menu keeps stdin), `serve`, `deploy` (with a deployer), `build and
+  serve`, `clean`, `generateVersion`, `bumpVersion`, `Js size`; each action
+  cancels the previous one first.
 * `menuFlutterWebAppContent(builders: [...])`: one builder gives the items
   directly; two or more give a `target <target>` submenu each plus an `all`
   submenu (`build`, `build and deploy`, `deploy`, `clean` over every
@@ -184,6 +199,30 @@ Future<void> main() async {
   );
   // flutter build web --wasm, copy to deploy/web, dhttpd on :8090
   await builder.buildAndServe();
+}
+```
+
+### Run in chrome, wasm, hot reload keys
+
+```dart
+// tool/run_web_wasm.dart — dart run tool/run_web_wasm.dart [flutter run args]
+import 'package:tekartik_flutter_build/app_build.dart';
+
+Future<void> main(List<String> args) async {
+  var builder = FlutterWebAppBuilder(
+    options: FlutterWebAppOptions(
+      buildOptions: FlutterWebAppBuildOptions(
+        wasm: true,
+        target: 'lib/main_dev.dart',
+      ),
+      // Same origin from one run to the next: the local data survives.
+      webPort: 8063,
+    ),
+  );
+  // flutter run -d chrome --web-port 8063 --wasm --target lib/main_dev.dart
+  // then the arguments (`--release`); r/R/q keys work, the script ends when
+  // flutter run quits.
+  await builder.run(args: args);
 }
 ```
 
