@@ -15,6 +15,17 @@ void main() {
         ),
         'flutter build web --wasm --target lib/main_dev.dart --no-pub',
       );
+      // The names kept in the wasm.
+      expect(
+        flutterWebBuildCommand(wasm: true, noStripWasm: true),
+        'flutter build web --wasm --no-strip-wasm',
+      );
+      expect(
+        flutterWebBuildCommand(wasm: true, noStripWasm: false),
+        'flutter build web --wasm',
+      );
+      // Meaningless without wasm.
+      expect(flutterWebBuildCommand(noStripWasm: true), 'flutter build web');
     });
     test('run', () {
       expect(
@@ -57,6 +68,11 @@ void main() {
       var wasm = options.copyWith(wasm: true);
       expect(wasm.wasm, isTrue);
       expect(wasm.target, 'lib/main_dev.dart');
+      expect(wasm.noStripWasm, isNull);
+      var named = wasm.copyWith(noStripWasm: true);
+      expect(named.noStripWasm, isTrue);
+      expect(named.wasm, isTrue);
+      expect(named.copyWith(target: 'lib/main.dart').noStripWasm, isTrue);
       expect(options.wasm, isNull);
       expect(wasm.copyWith(target: 'lib/main.dart').wasm, isTrue);
     });

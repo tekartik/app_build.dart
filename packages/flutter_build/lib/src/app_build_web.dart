@@ -43,37 +43,58 @@ class FlutterWebAppBuildOptions {
   /// `false` when `null`.
   final bool? wasm;
 
-  /// Creates build options with the given [renderer], [wasm] flag and
-  /// [target] entry point, each defaulting to `null` (tool defaults).
-  FlutterWebAppBuildOptions({this.renderer, this.wasm, this.target});
+  /// Whether a [wasm] build keeps its symbol names (`--no-strip-wasm`):
+  /// a runtime error in the browser console then names the function that
+  /// failed (`$func1259` otherwise, an "Attempt to execute code removed by
+  /// Dart AOT compiler" for instance), at the cost of a bigger download.
+  /// Defaults to `false` when `null` (the Flutter default, the names
+  /// stripped). Ignored without [wasm].
+  final bool? noStripWasm;
 
-  /// Returns a copy of these options, overriding [renderer], [wasm] and/or
-  /// [target] while keeping the rest unchanged (`copyWith(wasm: true)` for
-  /// the WebAssembly variant of the same entry point).
+  /// Creates build options with the given [renderer], [wasm] flag,
+  /// [noStripWasm] flag and [target] entry point, each defaulting to `null`
+  /// (tool defaults).
+  FlutterWebAppBuildOptions({
+    this.renderer,
+    this.wasm,
+    this.noStripWasm,
+    this.target,
+  });
+
+  /// Returns a copy of these options, overriding [renderer], [wasm],
+  /// [noStripWasm] and/or [target] while keeping the rest unchanged
+  /// (`copyWith(wasm: true)` for the WebAssembly variant of the same entry
+  /// point).
   FlutterWebAppBuildOptions copyWith({
     FlutterWebRenderer? renderer,
     bool? wasm,
+    bool? noStripWasm,
     String? target,
   }) {
     return FlutterWebAppBuildOptions(
       renderer: renderer ?? this.renderer,
       wasm: wasm ?? this.wasm,
+      noStripWasm: noStripWasm ?? this.noStripWasm,
       target: target ?? this.target,
     );
   }
 }
 
 /// The `flutter build web` command of [FlutterWebAppBuilder.buildOnly]:
-/// `--wasm` when [wasm], `--target` [target] when set and `--no-pub` when
-/// [noPub].
+/// `--wasm` when [wasm] (with `--no-strip-wasm` when [noStripWasm]),
+/// `--target` [target] when set and `--no-pub` when [noPub].
 String flutterWebBuildCommand({
   bool wasm = false,
+  bool noStripWasm = false,
   String? target,
   bool noPub = false,
 }) {
   var sb = StringBuffer('flutter build web');
   if (wasm) {
     sb.write(' --wasm');
+    if (noStripWasm) {
+      sb.write(' --no-strip-wasm');
+    }
   }
   if (target != null) {
     sb.write(' --target ${shellArgument(target)}');
@@ -231,8 +252,9 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   }
 
   /// Runs `flutter build web` (regenerating the version file first if
-  /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm` and
-  /// `target` settings, then logs the built JS (and wasm) size (see
+  /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm`,
+  /// `noStripWasm` and `target` settings, then logs the built JS (and wasm)
+  /// size (see
   /// [reportJsSize]). Passes `--no-pub` when [hasPubGetRun] reports `pub
   /// get` already ran for [path] (or its workspace).
   Future<void> buildOnly() async {
@@ -256,6 +278,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     await shell.run(
       flutterWebBuildCommand(
         wasm: wasm,
+        noStripWasm: buildOptions?.noStripWasm ?? false,
         target: buildOptions?.target,
         noPub: await hasPubGetRun(),
       ),
