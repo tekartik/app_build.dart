@@ -4,6 +4,10 @@ import 'package:tekartik_flutter_build/app_build.dart';
 
 import 'firebase_deploy.dart';
 
+/// As of flutter 3.47 wasm build with firebase/firestore have some issues
+/// Once fixed, set this to true!
+final flutterFirebaseWebSupportsWasm = false;
+
 /// Runs `flutter build web` in [directory].
 Future<void> flutterWebAppBuild(String directory) async {
   var shell = Shell().cd(directory);

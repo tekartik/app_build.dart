@@ -5,5 +5,6 @@ export 'src/app_build.dart'
         flutterWebAppBuild,
         flutterWebAppBuildAndDeploy,
         flutterWebAppBuildAndServe,
+        flutterFirebaseWebSupportsWasm,
         FlutterFirebaseWebAppOptions,
         FlutterFirebaseWebAppBuilder;
