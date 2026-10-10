@@ -19,7 +19,7 @@ publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 version: 0.0.1+1
 
 environment:
-  sdk: ^3.12.2
+  sdk: ^3.13.0
 
 # Dependencies specify other packages that your package needs in order to work.
 # To automatically upgrade your package dependencies to the latest versions
@@ -33,26 +33,31 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
+  cupertino_icons: ">=1.0.9"
 
   # For debugEnvMap, displayed on the home page.
   tekartik_common_utils:
     git:
       url: https://github.com/tekartik/common_utils.dart
 
+  # The app version, read in lib/src/version.dart.
+  pub_semver: ">=2.2.1"
+  # The design widgets, as the tekartik flutter packages use them.
+  material_ui: ">=1.5.0"
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   # For the deploy dir paths in the tool scripts.
-  path: ^1.9.0
+  path: ">=1.9.1"
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^6.0.0
+  flutter_lints: ">=6.0.0"
   tekartik_firebase_build_menu_flutter:
     git:
       url: https://github.com/tekartik/app_build.dart

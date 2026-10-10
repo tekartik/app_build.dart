@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:tekartik_app_build_demo_flutter_app/src/version.dart';
 import 'package:tekartik_common_utils/dev_utils.dart';
 
