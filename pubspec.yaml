@@ -10,6 +10,7 @@ workspace:
   - packages/firebase_build_menu_flutter
   - packages/flutter_build
   - packages/gcr_build
+  - packages/jaspr_build
   - packages/repo_support
   - packages/web_publish
   - example/demo_flutter_app
