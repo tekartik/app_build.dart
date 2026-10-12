@@ -19,7 +19,8 @@ What a build does, on top of `jaspr build`:
 - for a site in several languages, copies each page of the other languages
   to `i18n/<lang>/` at the path of its default language version (found
   through its `hreflang` link), so that Firebase Hosting i18n rewrites serve
-  it to the browsers asking for that language.
+  it to the browsers asking for that language, and the default language
+  pages to `i18n/<default>/` at their own paths.
 
 Deploy and serve then check the build (internal links, canonicals, noindex,
 hreflang pairs, i18n copies, sitemap, robots), write `firebase.json` from
@@ -102,5 +103,13 @@ languages, absolute `hreflang` links both ways.
 - The `i18n` folder is also reachable at `/i18n/...`: `firebase.json` gets a
   `X-Robots-Tag: noindex` rule on it. The rule follows the request path, so
   the copies served at the default urls do not get it.
+- Hosting goes through the browser's languages in order and serves the
+  first one with an `i18n/` folder; the content outside `i18n/` comes last.
+  Hence the `i18n/<default>/` copies: without them `en-US,en;q=0.9,fr;q=0.8`
+  gets French. The Hosting emulator serves English there: check the language
+  selection on a real (dev) Hosting site.
+- With i18n, the pages are sent with `Cache-Control: public, max-age=0,
+  s-maxage=300`: the browser cache ignores the language cookie, so a page
+  cached in one language would survive the switch; the CDN does key on it.
 - To let a visitor override the browser language, the site's language link
   sets the Hosting cookie `firebase-language-override` (`en`, `fr`...).

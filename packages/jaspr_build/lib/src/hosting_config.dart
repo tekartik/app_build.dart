@@ -20,7 +20,9 @@ const _noIndexValue = 'noindex, nofollow';
 /// - `X-Robots-Tag: noindex, nofollow` on every file exactly when the flavor
 ///   is [JasprSiteFlavor.noIndex];
 /// - 5 minutes of cache for the pages and the scripts, a year for `/fonts/`
-///   (immutable), a day for the images;
+///   (immutable), a day for the images; with [i18n] the browsers revalidate
+///   the pages each time (`max-age=0`), the CDN keeps them 5 minutes
+///   (`s-maxage=300`);
 /// - with [i18n], the `i18n` root of the Hosting language rewrites, its
 ///   folder kept out of search engines when reached directly;
 /// - then the site's own [hosting] headers and redirects.
@@ -48,7 +50,17 @@ Map<String, Object?> jasprSiteFirebaseJson(
             // Directory indexes (`/`, `/faq/`) and html files: a glob
             // such as `**/*.html` does not match `/` or `/faq/`.
             'regex': r'^(.*/|.*\.html)$',
-            'headers': [_cache('public, max-age=300')],
+            'headers': [
+              // With i18n a url serves one page per language, chosen by
+              // Accept-Language or the language cookie: the browser must
+              // revalidate (it does not key its cache on the cookie), the
+              // CDN keeps caching (it does).
+              _cache(
+                i18n
+                    ? 'public, max-age=0, s-maxage=300'
+                    : 'public, max-age=300',
+              ),
+            ],
           },
           {
             'source': '**/*.js',

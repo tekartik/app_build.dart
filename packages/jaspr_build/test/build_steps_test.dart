@@ -130,6 +130,25 @@ void main() {
       );
     });
 
+    test('the default language pages at the same paths', () async {
+      site.page('index.html', title: 'en home');
+      site.page('legal/index.html', title: 'en legal');
+      site.page('404.html', title: 'en 404');
+      site.page('fr/index.html', title: 'fr home', lang: 'fr');
+      site.page('i18n/fr/index.html', title: 'fr copy', lang: 'fr');
+      var copied = await jasprBuildI18nDefaultCopies(
+        site.path,
+        language: 'en',
+        otherLanguages: ['fr'],
+      );
+      expect(copied, ['/', '/404.html', '/legal/']);
+      expect(site.read('i18n/en/index.html'), contains('en home'));
+      expect(site.read('i18n/en/legal/index.html'), contains('en legal'));
+      expect(site.read('i18n/en/404.html'), contains('en 404'));
+      expect(site.exists('i18n/en/fr'), isFalse);
+      expect(site.exists('i18n/en/i18n'), isFalse);
+    });
+
     test('regional codes match', () async {
       site.page('index.html', alternates: {'fr-FR': '$_url/fr/'});
       site.page('fr/index.html', title: 'fr home', lang: 'fr');

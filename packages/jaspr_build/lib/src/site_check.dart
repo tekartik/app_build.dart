@@ -91,9 +91,11 @@ Future<JasprSiteCheckResult> jasprSiteCheck(
 
   var pages = [
     for (var file in jasprBuildHtmlFiles(buildPath))
-      // The i18n copies are the pages of the other languages again; the
-      // 404 pages moved there are not copies.
-      if (!file.startsWith(i18nPrefix) || is404(file)) file,
+      // The i18n copies are the pages again; the 404 pages of the other
+      // languages moved there are not copies.
+      if (!file.startsWith(i18nPrefix) ||
+          (is404(file) && !file.startsWith('$i18nPrefix${languages.first}/')))
+        file,
   ];
   if (pages.isEmpty) {
     issues.add('$buildPath: no page, build first');
@@ -219,6 +221,18 @@ Future<JasprSiteCheckResult> jasprSiteCheck(
   }
 
   if (otherLanguages.isNotEmpty) {
+    var defaultLanguage = languages.first;
+    for (var file in pages) {
+      if (file.startsWith(i18nPrefix) ||
+          otherLanguages.contains(file.split('/').first)) {
+        continue;
+      }
+      if (!File(
+        join(buildPath, jasprSiteI18nFolder, defaultLanguage, file),
+      ).existsSync()) {
+        issues.add('$file: no $defaultLanguage copy in /$jasprSiteI18nFolder/');
+      }
+    }
     for (var file in pages) {
       var path = jasprBuildPathOfFile(file);
       if (is404(file) ||

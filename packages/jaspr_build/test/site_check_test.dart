@@ -55,6 +55,9 @@ void _validSite(SiteFixture site, {bool noIndex = false}) {
     'i18n/fr/legal/index.html',
     site.read('fr/mentions-legales/index.html'),
   );
+  for (var file in ['index.html', 'legal/index.html', '404.html']) {
+    site.file('i18n/en/$file', site.read(file));
+  }
   site.sitemap([
     '$_url/',
     '$_url/legal/',
@@ -215,6 +218,10 @@ void main() {
       canonical: '$_url/changelog/',
       links: ['/'],
     );
+    site.file(
+      'i18n/en/changelog/index.html',
+      site.read('changelog/index.html'),
+    );
     expect((await check()).issues, [
       'changelog/index.html: no fr version (hreflang)',
     ]);
@@ -225,6 +232,16 @@ void main() {
     _validSite(site);
     site.remove('i18n/fr/legal/index.html');
     expect((await check()).issues, ['legal/index.html: no fr copy in /i18n/']);
+  });
+
+  test('a missing default language copy', () async {
+    _validSite(site);
+    site.remove('i18n/en/legal/index.html');
+    site.remove('i18n/en/404.html');
+    expect((await check()).issues, [
+      '404.html: no en copy in /i18n/',
+      'legal/index.html: no en copy in /i18n/',
+    ]);
   });
 
   test('a language with no version at all', () async {

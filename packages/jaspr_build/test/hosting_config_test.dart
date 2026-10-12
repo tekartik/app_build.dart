@@ -25,6 +25,16 @@ Map<String, Object?> _cache(String value) => {
   'value': value,
 };
 
+List<Map<String, Object?>> _common({bool i18n = false}) => [
+  {
+    'regex': r'^(.*/|.*\.html)$',
+    'headers': [
+      _cache(i18n ? 'public, max-age=0, s-maxage=300' : 'public, max-age=300'),
+    ],
+  },
+  ..._commonHeaders.skip(1),
+];
+
 final _commonHeaders = [
   {
     'regex': r'^(.*/|.*\.html)$',
@@ -91,6 +101,15 @@ void main() {
       expect(json, contains('X-Robots-Tag'));
     });
 
+    test('i18n: browsers revalidate the pages', () {
+      var json = jasprSiteFirebaseJson([_prod], i18n: true);
+      var headers = ((json['hosting'] as List).first as Map)['headers'] as List;
+      expect(headers.first, {
+        'regex': r'^(.*/|.*\.html)$',
+        'headers': [_cache('public, max-age=0, s-maxage=300')],
+      });
+    });
+
     test('i18n, site headers and redirects', () {
       var redirect = {
         'source': '/confidentialite/',
@@ -114,7 +133,7 @@ void main() {
             'ignore': _ignore,
             'i18n': {'root': '/i18n'},
             // Already noindex everywhere: no i18n rule.
-            'headers': [_noIndexHeader, ..._commonHeaders, audio],
+            'headers': [_noIndexHeader, ..._common(i18n: true), audio],
             'redirects': [redirect],
           },
           {
@@ -123,7 +142,7 @@ void main() {
             'ignore': _ignore,
             'i18n': {'root': '/i18n'},
             'headers': [
-              ..._commonHeaders,
+              ..._common(i18n: true),
               audio,
               {
                 'source': '/i18n/**',

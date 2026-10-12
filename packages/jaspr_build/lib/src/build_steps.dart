@@ -160,6 +160,36 @@ Future<List<String>> jasprBuildI18nCopies(
   return copied..sort();
 }
 
+/// Copies the pages of the default [language] to `i18n/<language>/` at the
+/// same paths: the html files outside the [otherLanguages] folders and
+/// outside `i18n/`, `404.html` included.
+///
+/// Firebase Hosting goes through the browser's languages in order and
+/// serves the first one that has a folder in `i18n/`; the content outside
+/// `i18n/` comes only when none has. Without these copies a browser asking
+/// for English first and French second gets French (checked on Firebase
+/// Hosting 2026-10-12; the Hosting emulator serves English there).
+///
+/// Returns the url paths copied, sorted.
+Future<List<String>> jasprBuildI18nDefaultCopies(
+  String buildPath, {
+  required String language,
+  List<String> otherLanguages = const [],
+}) async {
+  var copied = <String>[];
+  for (var file in jasprBuildHtmlFiles(buildPath)) {
+    var first = file.split('/').first;
+    if (first == jasprSiteI18nFolder || otherLanguages.contains(first)) {
+      continue;
+    }
+    var target = File(join(buildPath, jasprSiteI18nFolder, language, file));
+    await target.parent.create(recursive: true);
+    await File(join(buildPath, file)).copy(target.path);
+    copied.add(jasprBuildPathOfFile(file));
+  }
+  return copied..sort();
+}
+
 String? _alternateFor(Map<String, String> alternates, String language) {
   for (var entry in alternates.entries) {
     var code = entry.key.toLowerCase();

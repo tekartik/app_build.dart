@@ -16,7 +16,8 @@ export 'src/build_steps.dart'
         jasprBuildMove404,
         jasprBuildRemoveLeftovers,
         jasprBuildSitemapTrailingSlash,
-        jasprBuildI18nCopies;
+        jasprBuildI18nCopies,
+        jasprBuildI18nDefaultCopies;
 export 'src/hosting_config.dart'
     show jasprSiteFirebaseJson, jasprSiteWriteFirebaseJson;
 export 'src/jaspr_site.dart' show JasprSite;

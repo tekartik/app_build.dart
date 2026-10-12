@@ -85,9 +85,17 @@ Future<void> main() async {
   others live under `/<language>/`. The default is `['en', 'fr']`. A single
   language site passes one (`['fr']`) and gets no i18n.
 * With several languages, the build copies each French page to
-  `i18n/fr/<english path>` and `firebase.json` gets `"i18n": {"root":
-  "/i18n"}`: a browser asking for French gets French at the English url.
-  Render a French 404 at `/fr/404`: it becomes `i18n/fr/404.html`.
+  `i18n/fr/<english path>`, the English pages to `i18n/en/` at their own
+  paths, and `firebase.json` gets `"i18n": {"root": "/i18n"}`: a browser
+  asking for French gets French at the English url. Render a French 404 at
+  `/fr/404`: it becomes `i18n/fr/404.html`.
+* Hosting serves the first browser language that has an `i18n/` folder: the
+  `i18n/en/` copies are what keeps `en-US,en;q=0.9,fr;q=0.8` in English. The
+  Hosting emulator does not show this; check language selection on the dev
+  site with `curl -H 'Accept-Language: ...'`.
+* With i18n, pages get `Cache-Control: public, max-age=0, s-maxage=300`:
+  browsers revalidate (their cache ignores the language cookie), the CDN
+  keeps its 5 minutes (it keys on language and cookie).
 * The language link sets the cookie `firebase-language-override` (`en`,
   `fr`) so that a visitor's choice wins over the browser.
 * Pages of the default language with no translation must be listed in

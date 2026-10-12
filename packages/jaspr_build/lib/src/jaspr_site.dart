@@ -117,7 +117,8 @@ class JasprSite {
   /// What `jaspr build` leaves to do, on the build of [flavor]: the target
   /// marker, robots.txt, the 404 pages moved where Hosting serves them, the
   /// build_runner leftovers deleted, the sitemap trailing slashes and the
-  /// i18n copies of the other languages.
+  /// i18n copies of every language (the default one included, see
+  /// [jasprBuildI18nDefaultCopies]).
   Future<void> postBuild(JasprSiteFlavor flavor) async {
     await jasprBuildWriteTargetMarker(buildPath, flavor.target);
     await jasprBuildWriteRobots(
@@ -128,11 +129,18 @@ class JasprSite {
     await jasprBuildMove404(buildPath, otherLanguages: otherLanguages);
     await jasprBuildRemoveLeftovers(buildPath);
     await jasprBuildSitemapTrailingSlash(buildPath);
-    for (var language in otherLanguages) {
-      await jasprBuildI18nCopies(
+    if (otherLanguages.isNotEmpty) {
+      for (var language in otherLanguages) {
+        await jasprBuildI18nCopies(
+          buildPath,
+          language: language,
+          languages: otherLanguages,
+        );
+      }
+      await jasprBuildI18nDefaultCopies(
         buildPath,
-        language: language,
-        languages: otherLanguages,
+        language: languages.first,
+        otherLanguages: otherLanguages,
       );
     }
   }
