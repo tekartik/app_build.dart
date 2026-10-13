@@ -178,9 +178,15 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
 
   /// Builds the Flutter web app and copies the output into the deploy
   /// directory, without deploying or serving it.
+  ///
+  /// [controller], if given, can cancel the running `flutter build web`.
   Future<void> build({FirebaseWebAppActionController? controller}) async {
-    await _flutterWebAppBuilderOnly.buildOnly();
-    await _flutterWebAppBuilderOnly.buildToDeploy();
+    var webAppBuilder = firebaseWebAppBuilderWithController(
+      _flutterWebAppBuilderOnly,
+      controller,
+    );
+    await webAppBuilder.buildOnly();
+    await webAppBuilder.buildToDeploy();
   }
 
   /// Removes the built Flutter web app output for this project.
@@ -203,14 +209,10 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
     bool? interactive,
     FirebaseWebAppActionController? controller,
   }) async {
-    var webAppBuilder = _flutterWebAppBuilderOnly;
-    if (controller != null) {
-      var shell = Shell(workingDirectory: path);
-      controller.shell = shell;
-      webAppBuilder = webAppBuilder.copyWith(
-        controller: BuildShellController(shell: shell),
-      );
-    }
+    var webAppBuilder = firebaseWebAppBuilderWithController(
+      _flutterWebAppBuilderOnly,
+      controller,
+    );
     await webAppBuilder.run(args: args, interactive: interactive);
   }
 
@@ -270,4 +272,18 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
 
     await deploy(controller: controller);
   }
+}
+
+/// [builder] running its commands in a new shell that [controller] cancels,
+/// [builder] itself without [controller].
+FlutterWebAppBuilder firebaseWebAppBuilderWithController(
+  FlutterWebAppBuilder builder,
+  FirebaseWebAppActionController? controller,
+) {
+  if (controller == null) {
+    return builder;
+  }
+  var shell = Shell(workingDirectory: builder.path);
+  controller.shell = shell;
+  return builder.copyWith(controller: BuildShellController(shell: shell));
 }

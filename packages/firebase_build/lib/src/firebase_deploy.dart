@@ -247,4 +247,7 @@ extension FirebaseWebAppActionControllerPrvExt
   set shell(Shell shell) {
     _shell = shell;
   }
+
+  /// The shell [cancel] kills, `null` until one is set.
+  Shell? get shell => _shell;
 }

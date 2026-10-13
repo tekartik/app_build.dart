@@ -109,9 +109,8 @@ class AndroidPublisher {
     var apAppEdit = await newAppEdit();
     try {
       return await action(apAppEdit);
-    } catch (e) {
+    } finally {
       await apAppEdit.delete();
-      rethrow;
     }
   }
 

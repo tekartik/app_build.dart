@@ -6,6 +6,8 @@ import 'package:googleapis_auth/auth_io.dart';
 import 'package:path/path.dart';
 import 'package:tekartik_android_utils/aab_utils.dart';
 
+import 'android_publisher.dart';
+
 //import 'package:googleapis'
 
 const _scopes = [AndroidPublisherApi.androidpublisherScope];
@@ -58,13 +60,14 @@ class LocalAab {
   String toString() => toMap().toString();
 }
 
-const _noTrack = '_no_track_';
-
 /// Uploads [localAab] to the Play Console without publishing it to any
-/// track. See [manageBundle] for the service account lookup and upload
-/// behavior.
+/// track, skipping the upload when its version code is already there. See
+/// [manageBundle] for the service account lookup.
 Future uploadBundle(LocalAab localAab) async {
-  return await manageBundle(localAab, publishOptions: _noPublishOptions);
+  return await manageBundle(
+    localAab,
+    uploadOptions: UploadOptions(upload: true),
+  );
 }
 
 /// Publishes the already-uploaded [localAab] to [track] (defaults to
@@ -114,9 +117,6 @@ class PublishOptions {
   });
 }
 
-final _noPublishOptions = PublishOptions(track: _noTrack);
-final _noUploadOptions = UploadOptions(upload: false);
-
 /// Compat alias for [publishTrackInternal].
 // @Deprecated('Use publishTrackInternal')
 const internalTrack = publishTrackInternal;
@@ -145,28 +145,27 @@ const publishTrackWearProduction = 'wear:production';
 /// Uploads and/or publishes [localAab] using a Google service account.
 ///
 /// Looks for the service account JSON key at [serviceAccountPath]
-/// (defaults to `.local/service_account.json`), opens a Play Console edit,
-/// and:
-/// - if [uploadOptions] requests upload (defaults to not uploading — see
-///   [uploadBundle]/[publishBundle] for the common cases), uploads the
-///   bundle at [localAab]'s path, throwing if that version code was
-///   already uploaded as an apk;
-/// - if [uploadOptions] does *not* request upload, expects the version
-///   code to already exist as an apk or bundle, throwing if it's missing;
-/// - if [publishOptions] specifies a track, publishes the (possibly newly
-///   uploaded) version code to that track;
-/// - validates and commits the edit.
+/// (defaults to `.local/service_account.json`), then, in a single Play
+/// Console edit validated (unless
+/// [PublishOptions.changesNotSentForReview]) and committed, the way
+/// [AndroidPublisher.uploadBundleAndPublish] does:
+/// - when [uploadOptions] requests it (not by default, see [uploadBundle]),
+///   uploads the bundle at [localAab]'s path, unless its version code is
+///   already there;
+/// - without upload, expects the version code to be there already, throwing
+///   a [StateError] otherwise;
+/// - when [publishOptions] has a track (none by default, see
+///   [publishBundle]), publishes the version code to it with its
+///   [PublishOptions.releaseStatus].
 ///
 /// The edit is deleted (discarding changes) and the error rethrown if any
-/// step fails.
+/// step fails. Nothing is done when there is neither an upload nor a track.
 Future manageBundle(
   LocalAab localAab, {
   String? serviceAccountPath,
   UploadOptions? uploadOptions,
   PublishOptions? publishOptions,
 }) async {
-  uploadOptions ??= _noUploadOptions;
-  publishOptions ??= _noPublishOptions;
   await localAab.init();
 
   ServiceAccountCredentials? credentials;
@@ -194,125 +193,68 @@ Future manageBundle(
     throw exception;
   }
   var client = await clientViaServiceAccount(credentials!, _scopes);
-  var publish = AndroidPublisherApi(client);
-
-  var appEdit = AppEdit();
-  var packageName = localAab.packageName!;
-  appEdit = await publish.edits.insert(appEdit, localAab.packageName!);
-  var editId = appEdit.id;
   try {
-    var response = await publish.edits.tracks.list(packageName, appEdit.id!);
-    for (var track in response.tracks!) {
-      stdout.writeln(track.track);
-    }
-
-    stdout.writeln(
-      'package: $packageName, versionCode: ${localAab.versionCode}',
+    var publisher = AndroidPublisher(
+      packageName: localAab.packageName!,
+      api: AndroidPublisherApi(client),
     );
-    // Search in apks
-    var apkListResponse = await publish.edits.apks.list(
-      packageName,
-      appEdit.id!,
+    await manageBundleWithPublisher(
+      publisher,
+      localAab,
+      uploadOptions: uploadOptions,
+      publishOptions: publishOptions,
     );
-    var found = false;
-    if (apkListResponse.apks != null) {
-      for (var apk in apkListResponse.apks!) {
-        stdout.writeln('apk: ${apk.versionCode}');
-        if (apk.versionCode == localAab.versionCode) {
-          found = true;
-          break;
-        }
-      }
-    }
-
-    if (found) {
-      if (uploadOptions != _noUploadOptions) {
-        // ignore: only_throw_errors
-        throw 'Version already uploaded as apk';
-      }
-    }
-
-    // Search and aabs
-    var aabListResponse = await publish.edits.bundles.list(
-      packageName,
-      appEdit.id!,
-    );
-    if (aabListResponse.bundles != null) {
-      for (var bundle in aabListResponse.bundles!) {
-        stdout.writeln('aab: ${bundle.versionCode}');
-        //print(bundle.versionCode);
-        if (bundle.versionCode == localAab.versionCode) {
-          // throw 'Version already uploaded';
-          found = true;
-          break;
-        }
-      }
-    }
-
-    if (found) {
-      if (uploadOptions != _noUploadOptions) {
-        // ignore: only_throw_errors
-        throw 'Version already uploaded as aab';
-      }
-    } else {
-      if (uploadOptions == _noUploadOptions) {
-        // if (devWarning(false)) {
-        // ignore: only_throw_errors
-        throw 'Version ${localAab.versionCode} not found';
-        // }
-      }
-    }
-
-    var file = File(localAab.path);
-    var size = file.statSync().size;
-    var media = Media(file.openRead(), size);
-
-    int? versionCode;
-    if (uploadOptions != _noUploadOptions) {
-      stdout.writeln('uploading: $size bytes $localAab');
-      var aab = await publish.edits.bundles.upload(
-        packageName,
-        editId!,
-        uploadMedia: media,
-      );
-      stdout.writeln(aab.versionCode);
-      versionCode = aab.versionCode;
-    } else {
-      stdout.writeln('publishing $localAab');
-      versionCode = localAab.versionCode;
-    }
-
-    Future publishTrack(String trackName) async {
-      var track = Track();
-      // track.track = trackName;
-      track.releases = [
-        TrackRelease()
-          ..versionCodes = [versionCode.toString()]
-          ..status = 'completed',
-      ]; // v2:versionCodes = [versionCode];
-      stdout.writeln('updating track: ${track.releases!.first.toJson()}');
-      await publish.edits.tracks.update(
-        track,
-        packageName,
-        appEdit.id!,
-        trackName,
-      );
-    }
-
-    stdout.writeln('uploaded');
-
-    // await publishTrack('internal'); // 'alpha'
-    if (publishOptions != _noPublishOptions) {
-      await publishTrack(publishOptions.track ?? publishTrackInternal);
-    }
-
-    await publish.edits.validate(packageName, editId!);
-    await publish.edits.commit(packageName, editId);
-  } catch (e) {
-    stderr.writeln(e);
-    await publish.edits.delete(packageName, editId!);
-    rethrow;
   } finally {
-    // await publish.edits.delete(packageName, appEdit.id);
+    client.close();
   }
+}
+
+/// What [manageBundle] does with an opened [publisher], see there.
+Future<void> manageBundleWithPublisher(
+  AndroidPublisher publisher,
+  LocalAab localAab, {
+  UploadOptions? uploadOptions,
+  PublishOptions? publishOptions,
+}) async {
+  var upload = uploadOptions?.upload ?? false;
+  var track = publishOptions?.track;
+  var versionCode = localAab.versionCode;
+  stdout.writeln(
+    'package: ${publisher.packageName}, versionCode: $versionCode',
+  );
+  if (!upload && track == null) {
+    stdout.writeln('nothing to upload or publish');
+    return;
+  }
+  var releaseStatus = publishOptions?.releaseStatus;
+  var changesNotSentForReview = publishOptions?.changesNotSentForReview;
+  if (upload && track != null) {
+    await publisher.uploadBundleAndPublish(
+      aabPath: localAab.path,
+      trackName: track,
+      versionCode: versionCode,
+      releaseStatus: releaseStatus,
+      changesNotSentForReview: changesNotSentForReview,
+    );
+    return;
+  }
+  await publisher.writeAppEdit((appEdit) async {
+    var found = await appEdit.hasBundleVersionCode(versionCode);
+    if (upload) {
+      if (found) {
+        stdout.writeln('versionCode $versionCode already exists');
+      } else {
+        await appEdit.uploadBundle(localAab.path);
+      }
+    } else {
+      if (!found) {
+        throw StateError('Version $versionCode not found');
+      }
+      await appEdit.publishTrack(
+        track!,
+        versionCode: versionCode,
+        releaseStatus: releaseStatus,
+      );
+    }
+  }, changesNotSentForReview: changesNotSentForReview);
 }
