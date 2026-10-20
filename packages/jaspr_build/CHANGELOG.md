@@ -1,3 +1,12 @@
+## 0.1.2
+
+- `jaspr_screenshot.dart`: screenshots of a built site with headless Chrome
+  (DevTools protocol), moved from the tekartik.com site tools:
+  `jasprSiteScreenshots` (every page of a build, each language, desktop and
+  phone), `captureSiteScreenshots`, `jasprBuildScreenshotPages`, and the
+  pieces (`StaticSiteServer`, `HeadlessChrome`, `PageScreenshotter`,
+  `CdpSession`, `ScreenshotView`). Needs process_run 1.4.0.
+
 ## 0.1.1
 
 - i18n: the default language pages are copied to `i18n/<default>/` too.

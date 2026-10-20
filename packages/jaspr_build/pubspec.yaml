@@ -3,7 +3,7 @@ description: >-
   Build, check and deploy jaspr static sites to Firebase Hosting: jaspr build
   with per target defines, post build fixes, firebase.json from the targets,
   i18n copies for Hosting language rewrites, link checks and a dev menu.
-version: 0.1.1
+version: 0.1.2
 publish_to: none
 
 environment:
@@ -13,8 +13,8 @@ environment:
 # this package adds no analyzer constraint to the workspace using it.
 dependencies:
   path: ">=1.9.1"
-  process_run: ">=1.2.1+1"
-  dev_build: ">=1.1.7+3"
+  process_run: ">=1.4.0"
+  dev_build: ">=1.1.15"
   tekartik_firebase_build:
     git:
       url: https://github.com/tekartik/app_build.dart

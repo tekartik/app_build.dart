@@ -95,6 +95,25 @@ a canonical link on the site url, `<meta name="robots" content="noindex,
 nofollow">` when noindex (404 pages may always carry it), and, with several
 languages, absolute `hreflang` links both ways.
 
+## Screenshots
+
+`jaspr_screenshot.dart` captures a built site with headless Chrome (driven
+through the DevTools protocol, the build served by a local server that
+resolves urls as Hosting does):
+
+```dart
+import 'package:tekartik_jaspr_build/jaspr_screenshot.dart';
+
+await jasprSiteScreenshots(buildPath: 'build/jaspr', out: '.local/shots');
+```
+
+writes every page in each language (paired through their `hreflang` links,
+the 404 of each language included) on a desktop and a phone, full page:
+`01_home_en_desktop.png`, `01_home_fr_mobile.png`...
+`captureSiteScreenshots` takes chosen pages and views, a script to run in
+each page first and other folders to serve. Chrome is `CHROME_EXECUTABLE`,
+else Chrome or Chromium on the path.
+
 ## Notes
 
 - `jaspr build` uses a fixed proxy port (5567): two jaspr builds on the same

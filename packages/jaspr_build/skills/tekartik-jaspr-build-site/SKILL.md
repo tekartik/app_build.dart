@@ -9,8 +9,12 @@ description: >-
   defines), JasprSiteHosting (headers, redirects), jasprSiteCheck,
   jasprSiteFirebaseJson, the jasprBuild* post build steps, i18n copies for
   Firebase Hosting language rewrites (English default, French by browser
-  language), pubspecVersion, webpConvert, and jaspr_build_menu.dart
-  (mainJasprSiteMenu, jasprSiteMenuContent).
+  language), pubspecVersion, webpConvert, jaspr_build_menu.dart
+  (mainJasprSiteMenu, jasprSiteMenuContent), and the screenshots of a
+  built site with headless Chrome in jaspr_screenshot.dart
+  (jasprSiteScreenshots, captureSiteScreenshots, jasprBuildScreenshotPages,
+  SiteScreenshotPage, ScreenshotView, StaticSiteServer, HeadlessChrome,
+  PageScreenshotter, CdpSession).
 ---
 
 # tekartik_jaspr_build site
@@ -197,6 +201,49 @@ Future<void> main() async {
   print(result);
 }
 ```
+
+### Screenshots of a build
+
+Every page of the last build, each language next to the others
+(`01_home_en_desktop.png`, `01_home_fr_desktop.png`...), on a desktop, a
+phone and, with `dark`, a desktop at night; full page pngs:
+
+```dart
+import 'package:tekartik_jaspr_build/jaspr_screenshot.dart';
+
+Future<void> main() async {
+  await jasprSiteScreenshots(
+    buildPath: 'build/jaspr',
+    out: '.local/2026-10-20-site-screenshots',
+    dark: true,
+  );
+}
+```
+
+Chosen pages and views, a script run in each page first:
+
+```dart
+import 'package:tekartik_jaspr_build/jaspr_screenshot.dart';
+
+Future<void> main() async {
+  await captureSiteScreenshots(
+    root: 'build/jaspr',
+    pages: [const SiteScreenshotPage('01_home_en', '/', lang: 'en')],
+    out: '.local/shots',
+    views: [
+      screenshotMobile,
+      const ScreenshotView('tablet', width: 820, height: 1180),
+    ],
+    where: (page, view) => !view.dark || page.lang == 'en',
+    script: 'document.body.classList.add("demo")',
+  );
+}
+```
+
+Chrome is `CHROME_EXECUTABLE` (environment or the process_run user env),
+else `google-chrome`/`chromium` on the path. A Flutter web page needs
+`HeadlessChrome.start(arguments: ['--enable-unsafe-swiftshader'])` and a
+longer `settle` (its first frame comes well after the load event).
 
 ## Common mistakes
 
