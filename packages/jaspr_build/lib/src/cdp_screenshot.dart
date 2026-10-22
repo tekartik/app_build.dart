@@ -72,16 +72,24 @@ const screenshotDesktopDark = ScreenshotView(
 /// A static file server on a free local port: [root] at `/`, and other
 /// folders at their url prefix ([mounts], `/prefix/` to folder). A folder
 /// url serves its `index.html`, a missing file the root's `404.html`.
+///
+/// With [spa] (a single page app, a Flutter web build with the path url
+/// strategy), a missing url without an extension serves the root's
+/// `index.html` instead, as the Hosting rewrite of the app does.
 class StaticSiteServer {
   final HttpServer _server;
   final Map<String, String> _mounts;
 
-  StaticSiteServer._(this._server, this._mounts);
+  /// A single page app: the unknown paths serve the root's `index.html`.
+  final bool spa;
 
-  /// Starts serving [root] and [mounts].
+  StaticSiteServer._(this._server, this._mounts, {required this.spa});
+
+  /// Starts serving [root] and [mounts], as a single page app when [spa].
   static Future<StaticSiteServer> start(
     String root, {
     Map<String, String> mounts = const {},
+    bool spa = false,
   }) async {
     var server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
     var siteServer = StaticSiteServer._(server, {
@@ -90,7 +98,7 @@ class StaticSiteServer {
           in mounts.keys.toList()..sort((a, b) => b.length - a.length))
         prefix: mounts[prefix]!,
       '/': root,
-    });
+    }, spa: spa);
     server.listen(siteServer._serve);
     return siteServer;
   }
@@ -104,6 +112,9 @@ class StaticSiteServer {
       var path = request.uri.path;
       var prefix = _mounts.keys.firstWhere(path.startsWith);
       var file = _file(_mounts[prefix]!, '/${path.substring(prefix.length)}');
+      if (file == null && spa && extension(path).isEmpty) {
+        file = _file(_mounts['/']!, '/index.html');
+      }
       if (file == null) {
         response.statusCode = HttpStatus.notFound;
         file = _file(_mounts['/']!, '/404.html');

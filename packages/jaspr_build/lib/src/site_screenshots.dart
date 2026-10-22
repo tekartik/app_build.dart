@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:path/path.dart';
 
@@ -121,16 +122,82 @@ List<SiteScreenshotPage> jasprBuildScreenshotPages(String buildPath) {
   ];
 }
 
-/// Captures [pages] of the static site [root] (served locally with
-/// [mounts], see [StaticSiteServer]) in each of [views], full page, as
+/// The url of [path] (a path, its query too: `/c?n=4`) on the site [base].
+Uri screenshotPageUrl(Uri base, String path) =>
+    Uri.parse('${base.toString().replaceAll(RegExp(r'/+$'), '')}$path');
+
+/// Runs [action] with the url of the site: [url] when given (served
+/// elsewhere, deployed), else the folder [root] served locally with
+/// [mounts], as a single page app when [spa] ([StaticSiteServer]).
+Future<T> withScreenshotSite<T>({
+  String? root,
+  Uri? url,
+  Map<String, String> mounts = const {},
+  bool spa = false,
+  required Future<T> Function(Uri url) action,
+}) async {
+  if ((root == null) == (url == null)) {
+    throw ArgumentError('one of root and url');
+  }
+  if (url != null) {
+    return await action(url);
+  }
+  var server = await StaticSiteServer.start(root!, mounts: mounts, spa: spa);
+  try {
+    return await action(server.uri);
+  } finally {
+    await server.close();
+  }
+}
+
+/// Captures each of [pages] in each of [views] with [capture], as
 /// `<out>/<page.name>_<view.name>.png`; returns the files written.
+///
+/// [only] keeps the files whose name has one of its texts, [where] the
+/// pairs it accepts (the dark view in one language only, for instance).
+Future<List<File>> captureScreenshotFiles({
+  required List<SiteScreenshotPage> pages,
+  required String out,
+  required List<ScreenshotView> views,
+  required Future<Uint8List> Function(
+    SiteScreenshotPage page,
+    ScreenshotView view,
+  )
+  capture,
+  List<String> only = const [],
+  bool Function(SiteScreenshotPage page, ScreenshotView view)? where,
+}) async {
+  var files = <File>[];
+  await Directory(out).create(recursive: true);
+  for (var view in views) {
+    for (var page in pages) {
+      var name = '${page.name}_${view.name}.png';
+      if ((only.isNotEmpty && !only.any(name.contains)) ||
+          !(where?.call(page, view) ?? true)) {
+        continue;
+      }
+      var png = await capture(page, view);
+      var file = File(join(out, name));
+      await file.writeAsBytes(png);
+      files.add(file);
+      var (width, height) = pngSize(png);
+      stdout.writeln('$name ${width}x$height');
+    }
+  }
+  return files;
+}
+
+/// Captures [pages] of the static site [root] (served locally with
+/// [mounts], see [StaticSiteServer]) or at [url] in each of [views], full
+/// page, as `<out>/<page.name>_<view.name>.png`; returns the files written.
 ///
 /// [only] keeps the files whose name has one of its texts, [where] the
 /// pairs it accepts (the dark view in one language only, for instance);
 /// [script] runs in each page before the capture
 /// ([PageScreenshotter.capture]). Chrome is [findChromeExecutable].
 Future<List<File>> captureSiteScreenshots({
-  required String root,
+  String? root,
+  Uri? url,
   required List<SiteScreenshotPage> pages,
   required String out,
   List<ScreenshotView> views = const [screenshotDesktop, screenshotMobile],
@@ -138,41 +205,31 @@ Future<List<File>> captureSiteScreenshots({
   bool Function(SiteScreenshotPage page, ScreenshotView view)? where,
   Map<String, String> mounts = const {},
   String? script,
-}) async {
-  var files = <File>[];
-  await Directory(out).create(recursive: true);
-  var server = await StaticSiteServer.start(root, mounts: mounts);
-  try {
+}) => withScreenshotSite(
+  root: root,
+  url: url,
+  mounts: mounts,
+  action: (siteUrl) async {
     var chrome = await HeadlessChrome.start();
     try {
       var screenshotter = await PageScreenshotter.open(await chrome.openPage());
-      for (var view in views) {
-        for (var page in pages) {
-          var name = '${page.name}_${view.name}.png';
-          if ((only.isNotEmpty && !only.any(name.contains)) ||
-              !(where?.call(page, view) ?? true)) {
-            continue;
-          }
-          var png = await screenshotter.capture(
-            server.uri.replace(path: page.path),
-            view,
-            script: script,
-          );
-          var file = File(join(out, name));
-          await file.writeAsBytes(png);
-          files.add(file);
-          var (width, height) = pngSize(png);
-          stdout.writeln('$name ${width}x$height');
-        }
-      }
+      return await captureScreenshotFiles(
+        pages: pages,
+        out: out,
+        views: views,
+        only: only,
+        where: where,
+        capture: (page, view) => screenshotter.capture(
+          screenshotPageUrl(siteUrl, page.path),
+          view,
+          script: script,
+        ),
+      );
     } finally {
       await chrome.close();
     }
-  } finally {
-    await server.close();
-  }
-  return files;
-}
+  },
+);
 
 /// Captures every page of the jaspr build [buildPath] (see
 /// [jasprBuildScreenshotPages]) on a desktop and a phone, the night view

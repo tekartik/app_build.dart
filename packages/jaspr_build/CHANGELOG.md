@@ -1,3 +1,18 @@
+## 0.1.3
+
+- `jaspr_screenshot.dart`: the screens of a Flutter web app,
+  `captureFlutterWebScreenshots` (a build served as a single page app, or a
+  deployed app; each page in its language through `navigator.languages`) and
+  `FlutterWebScreenshotter` (real time: the `flutter-view`, the
+  tekartik_web_splash splash hidden, then a settle time);
+  `headlessChromeFlutterArguments` (swiftshader, else CanvasKit stays white).
+- `StaticSiteServer.start(spa: true)`: the unknown paths without an extension
+  serve `index.html` (the path url strategy, as the Hosting rewrite).
+- `captureSiteScreenshots(url:)`: a site served elsewhere (a server, a
+  deployed site) instead of a built folder; the shared pieces
+  `captureScreenshotFiles`, `withScreenshotSite`, `screenshotPageUrl` (a
+  page path with its query).
+
 ## 0.1.2
 
 - `jaspr_screenshot.dart`: screenshots of a built site with headless Chrome

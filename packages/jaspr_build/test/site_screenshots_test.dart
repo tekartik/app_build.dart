@@ -69,4 +69,43 @@ void main() {
       await server.close();
     }
   });
+
+  test('StaticSiteServer spa', () async {
+    site.page('index.html', title: 'app');
+    site.page('404.html', title: 'not found');
+    var server = await StaticSiteServer.start(site.path, spa: true);
+    var client = HttpClient();
+    try {
+      Future<(int, String)> get(String path) async {
+        var response = await (await client.getUrl(
+          screenshotPageUrl(server.uri, path),
+        )).close();
+        var body = await response.transform(systemEncoding.decoder).join();
+        return (response.statusCode, body);
+      }
+
+      // A deep link of the app, its query too.
+      var (status, body) = await get('/p/847-2-3?l=9');
+      expect(status, 200);
+      expect(body, contains('<title>app</title>'));
+      // A missing file.
+      (status, body) = await get('/missing.js');
+      expect(status, 404);
+      expect(body, contains('<title>not found</title>'));
+    } finally {
+      client.close();
+      await server.close();
+    }
+  });
+
+  test('screenshotPageUrl', () {
+    expect(
+      screenshotPageUrl(Uri.parse('https://a.web.app/'), '/c?n=4&ops=as'),
+      Uri.parse('https://a.web.app/c?n=4&ops=as'),
+    );
+    expect(
+      screenshotPageUrl(Uri.parse('http://127.0.0.1:8080'), '/'),
+      Uri.parse('http://127.0.0.1:8080/'),
+    );
+  });
 }

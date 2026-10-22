@@ -3,7 +3,7 @@ description: >-
   Build, check and deploy jaspr static sites to Firebase Hosting: jaspr build
   with per target defines, post build fixes, firebase.json from the targets,
   i18n copies for Hosting language rewrites, link checks and a dev menu.
-version: 0.1.2
+version: 0.1.3
 publish_to: none
 
 environment:
