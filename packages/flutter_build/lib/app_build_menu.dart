@@ -1,3 +1,7 @@
 export 'app_build.dart';
 export 'src/app_build_menu.dart'
-    show menuFlutterWebAppBuilderContent, menuFlutterWebAppContent;
+    show
+        menuBuildSecretsLine,
+        menuCheckBuildSecrets,
+        menuFlutterWebAppBuilderContent,
+        menuFlutterWebAppContent;

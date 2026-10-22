@@ -33,6 +33,8 @@ dependencies:
     git:
       url: https://github.com/tekartik/build_flutter.dart
       path: packages/build_flutter
+  # build_secrets.dart: the entries of an apk, an app bundle or an ipa
+  archive: ">=4.0.0"
 dev_dependencies:
   test: ">=1.31.0"
 resolution: workspace

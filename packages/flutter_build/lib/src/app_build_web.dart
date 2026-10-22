@@ -2,9 +2,12 @@ import 'package:dev_build/build_support.dart';
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:process_run/stdio.dart';
+import 'package:tekartik_build_flutter/build_flutter.dart'
+    show buildPlatformWeb, flutterProjectEntryPoint;
 import 'package:tekartik_common_build/common_app_builder.dart';
 import 'package:tekartik_common_build/serve_dir.dart';
 import 'package:tekartik_deploy/fs_deploy.dart';
+import 'package:tekartik_flutter_build/src/build_secrets.dart';
 import 'package:tekartik_flutter_build/src/controller.dart';
 import 'package:tekartik_flutter_build/src/web_build_size.dart';
 import 'package:tekartik_web_publish/web_publish.dart';
@@ -33,7 +36,9 @@ enum FlutterWebRenderer {
 class FlutterWebAppBuildOptions {
   /// The main entry-point file of the application, passed as `--target`.
   ///
-  /// If omitted (`null`), Flutter defaults to `lib/main.dart`.
+  /// If omitted (`null`), `lib/main_web.dart` when the project has one,
+  /// `lib/main.dart` (the Flutter default) otherwise, see
+  /// [FlutterWebAppBuilder.entryPoint].
   final String? target;
 
   /// Web renderer to build with, or `null` for the Flutter tool's default.
@@ -51,6 +56,12 @@ class FlutterWebAppBuildOptions {
   /// stripped). Ignored without [wasm].
   final bool? noStripWasm;
 
+  /// Values the build must not contain (credentials held in server code),
+  /// checked by [FlutterWebAppBuilder.buildOnly] after each build: it throws
+  /// a [BuildSecretsFoundException] before anything is copied or deployed.
+  /// `null` or empty: no check.
+  final List<BuildSecret>? secrets;
+
   /// Creates build options with the given [renderer], [wasm] flag,
   /// [noStripWasm] flag and [target] entry point, each defaulting to `null`
   /// (tool defaults).
@@ -59,26 +70,35 @@ class FlutterWebAppBuildOptions {
     this.wasm,
     this.noStripWasm,
     this.target,
+    this.secrets,
   });
 
   /// Returns a copy of these options, overriding [renderer], [wasm],
-  /// [noStripWasm] and/or [target] while keeping the rest unchanged
-  /// (`copyWith(wasm: true)` for the WebAssembly variant of the same entry
-  /// point).
+  /// [noStripWasm], [target] and/or [secrets] while keeping the rest
+  /// unchanged (`copyWith(wasm: true)` for the WebAssembly variant of the
+  /// same entry point).
   FlutterWebAppBuildOptions copyWith({
     FlutterWebRenderer? renderer,
     bool? wasm,
     bool? noStripWasm,
     String? target,
+    List<BuildSecret>? secrets,
   }) {
     return FlutterWebAppBuildOptions(
       renderer: renderer ?? this.renderer,
       wasm: wasm ?? this.wasm,
       noStripWasm: noStripWasm ?? this.noStripWasm,
       target: target ?? this.target,
+      secrets: secrets ?? this.secrets,
     );
   }
 }
+
+/// The default entry point of a web build of the flutter project at
+/// [path]: `lib/main_web.dart` when present, null otherwise (`lib/main.dart`,
+/// the Flutter default).
+String? flutterWebAppEntryPoint(String path) =>
+    flutterProjectEntryPoint(path, platform: buildPlatformWeb);
 
 /// The `flutter build web` command of [FlutterWebAppBuilder.buildOnly]:
 /// `--wasm` when [wasm] (with `--no-strip-wasm` when [noStripWasm]),
@@ -251,12 +271,20 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     await _webAppBuildToDeploy();
   }
 
+  /// The entry point of the build and of [run]: the `target` of the build
+  /// options, `lib/main_web.dart` when present, null otherwise
+  /// (`lib/main.dart`, the Flutter default).
+  String? get entryPoint =>
+      options.buildOptions?.target ?? flutterWebAppEntryPoint(path);
+
   /// Runs `flutter build web` (regenerating the version file first if
-  /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm`,
-  /// `noStripWasm` and `target` settings, then logs the built JS (and wasm)
-  /// size (see
-  /// [reportJsSize]). Passes `--no-pub` when [hasPubGetRun] reports `pub
-  /// get` already ran for [path] (or its workspace).
+  /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm` and
+  /// `noStripWasm` settings on the [entryPoint], then logs the built JS (and
+  /// wasm) size (see [reportJsSize]). Passes `--no-pub` when [hasPubGetRun]
+  /// reports `pub get` already ran for [path] (or its workspace).
+  ///
+  /// Then checks that `build/web` contains none of the build options'
+  /// `secrets` ([checkNoSecrets]).
   Future<void> buildOnly() async {
     await generateVersionIfNeeded();
     var buildOptions = options.buildOptions;
@@ -279,12 +307,26 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       flutterWebBuildCommand(
         wasm: wasm,
         noStripWasm: buildOptions?.noStripWasm ?? false,
-        target: buildOptions?.target,
+        target: entryPoint,
         noPub: await hasPubGetRun(),
       ),
     );
 
     await reportJsSize();
+    await checkNoSecrets();
+  }
+
+  /// The `secrets` of the build options, empty if none.
+  List<BuildSecret> get secrets => options.buildOptions?.secrets ?? const [];
+
+  /// Throws a [BuildSecretsFoundException] when `build/web` contains one of
+  /// the [secrets] (see [buildCheckNoSecrets]), does nothing without
+  /// secrets.
+  Future<void> checkNoSecrets() async {
+    if (secrets.isEmpty) {
+      return;
+    }
+    await buildCheckNoSecrets(join(path, 'build', 'web'), secrets);
   }
 
   var _infoShownOnce = false;
@@ -363,7 +405,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
   /// Runs the app in Chrome (`flutter run -d chrome`) on
   /// [FlutterWebAppOptions.webPort], with the
   /// [FlutterWebAppOptions.buildOptions] of the build: `--wasm` when `wasm`
-  /// is set, `--target` when `target` is set, plus `--no-pub` when
+  /// is set, `--target` the [entryPoint], plus `--no-pub` when
   /// [hasPubGetRun] reports `pub get` already ran for [path] (or its
   /// workspace). [args] are appended to the command (`--release`,
   /// `--dart-define=...`). Blocks until `flutter run` exits.
@@ -383,7 +425,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
     var command = flutterWebRunCommand(
       webPort: options.webPort,
       wasm: buildOptions?.wasm ?? false,
-      target: buildOptions?.target,
+      target: entryPoint,
       noPub: await hasPubGetRun(),
       args: args,
     );

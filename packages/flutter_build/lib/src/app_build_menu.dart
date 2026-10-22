@@ -16,6 +16,8 @@ void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
 
   enter(() async {
     write('App path: ${absolute(path)}');
+    write('Entry point: ${builder.entryPoint ?? 'lib/main.dart'}');
+    write(menuBuildSecretsLine(builder.secrets));
   });
 
   void cancel() {
@@ -79,6 +81,33 @@ void menuFlutterWebAppBuilderContent({required FlutterWebAppBuilder builder}) {
   item('Js size', () async {
     await builder.reportJsSize();
   });
+
+  item('check secrets (last build)', () async {
+    await menuCheckBuildSecrets(builder);
+  });
+}
+
+/// What the menus show of the build [secrets].
+String menuBuildSecretsLine(List<BuildSecret> secrets) => secrets.isEmpty
+    ? 'Secrets: none checked (FlutterWebAppBuildOptions.secrets)'
+    : 'Secrets: ${secrets.length} checked after each build '
+          '(${secrets.map((secret) => secret.name).join(', ')})';
+
+/// Checks the last build of [builder] for its secrets, reports what it
+/// found instead of throwing.
+Future<void> menuCheckBuildSecrets(FlutterWebAppBuilder builder) async {
+  if (builder.secrets.isEmpty) {
+    write('No secrets configured (FlutterWebAppBuildOptions.secrets)');
+    return;
+  }
+  try {
+    await builder.checkNoSecrets();
+  } on BuildSecretsFoundException catch (e) {
+    write('$e');
+  } on ArgumentError catch (e) {
+    // No build yet.
+    write('${e.message}: ${e.invalidValue}');
+  }
 }
 
 /// Registers dev-menu items for each project in [builders] (see
@@ -128,6 +157,12 @@ void menuFlutterWebAppContent({required List<FlutterWebAppBuilder> builders}) {
         all.cancel();
         for (var builder in all.builders) {
           await builder.clean();
+        }
+      });
+
+      item('check secrets (last builds)', () async {
+        for (var builder in all.builders) {
+          await menuCheckBuildSecrets(builder);
         }
       });
     });

@@ -8,10 +8,13 @@ import 'firebase_deploy.dart';
 /// Once fixed, set this to true!
 final flutterFirebaseWebSupportsWasm = false;
 
-/// Runs `flutter build web` in [directory].
+/// Runs `flutter build web` in [directory], on `lib/main_web.dart` when
+/// present (`lib/main.dart` otherwise, see [flutterWebAppEntryPoint]).
 Future<void> flutterWebAppBuild(String directory) async {
   var shell = Shell().cd(directory);
-  await shell.run('flutter build web');
+  await shell.run(
+    flutterWebBuildCommand(target: flutterWebAppEntryPoint(directory)),
+  );
 }
 
 /// Builds the Flutter web app in [directory], copies the output to the
@@ -175,6 +178,18 @@ class FlutterFirebaseWebAppBuilder implements CommonAppBuilder {
 
   /// The Firebase deploy target, i.e. `options.deployOptions.target`.
   String get target => options.deployOptions.target;
+
+  /// The entry point of the build, see [FlutterWebAppBuilder.entryPoint]
+  /// (`lib/main_web.dart` when present by default).
+  String? get entryPoint => _flutterWebAppBuilderOnly.entryPoint;
+
+  /// The secrets checked after each build, see
+  /// [FlutterWebAppBuildOptions.secrets].
+  List<BuildSecret> get secrets => _flutterWebAppBuilderOnly.secrets;
+
+  /// Throws a [BuildSecretsFoundException] when the last build contains one
+  /// of the [secrets], see [FlutterWebAppBuilder.checkNoSecrets].
+  Future<void> checkNoSecrets() => _flutterWebAppBuilderOnly.checkNoSecrets();
 
   /// Builds the Flutter web app and copies the output into the deploy
   /// directory, without deploying or serving it.

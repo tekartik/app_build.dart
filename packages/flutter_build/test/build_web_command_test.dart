@@ -1,9 +1,53 @@
+@TestOn('vm')
+library;
+
+import 'dart:io';
+
+import 'package:path/path.dart';
 import 'package:tekartik_flutter_build/app_build.dart';
+import 'package:tekartik_flutter_build/app_build_menu.dart'
+    show menuBuildSecretsLine;
 import 'package:tekartik_flutter_build/src/app_build_web.dart'
-    show flutterWebBuildCommand, flutterWebRunCommand;
+    show flutterWebRunCommand;
 import 'package:test/test.dart';
 
 void main() {
+  group('entry point', () {
+    test('lib/main_web.dart when present, the target first', () async {
+      var dir = await Directory.systemTemp.createTemp('web_entry_point');
+      try {
+        FlutterWebAppBuilder builder({String? target}) => FlutterWebAppBuilder(
+          options: FlutterWebAppOptions(
+            path: dir.path,
+            buildOptions: FlutterWebAppBuildOptions(target: target),
+          ),
+        );
+        expect(flutterWebAppEntryPoint(dir.path), isNull);
+        expect(builder().entryPoint, isNull);
+        await File(
+          join(dir.path, 'lib', 'main_web.dart'),
+        ).create(recursive: true);
+        expect(flutterWebAppEntryPoint(dir.path), 'lib/main_web.dart');
+        expect(builder().entryPoint, 'lib/main_web.dart');
+        expect(
+          builder(target: 'lib/main_demo.dart').entryPoint,
+          'lib/main_demo.dart',
+        );
+      } finally {
+        await dir.delete(recursive: true);
+      }
+    });
+  });
+
+  group('secrets', () {
+    test('menu line', () {
+      expect(menuBuildSecretsLine([]), contains('none'));
+      var line = menuBuildSecretsLine([BuildSecret('awsKey', 'value1234')]);
+      expect(line, contains('awsKey'));
+      expect(line, isNot(contains('value1234')));
+    });
+  });
+
   group('command', () {
     test('build', () {
       expect(flutterWebBuildCommand(), 'flutter build web');

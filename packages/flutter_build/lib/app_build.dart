@@ -6,7 +6,18 @@ export 'src/app_build_web.dart'
         FlutterWebRenderer,
         FlutterWebAppBuilder,
         FlutterWebAppOptions,
-        flutterWebAppsBuildSize;
+        flutterWebAppEntryPoint,
+        flutterWebAppsBuildSize,
+        flutterWebBuildCommand;
+export 'src/build_secrets.dart'
+    show
+        BuildSecret,
+        BuildSecretMatch,
+        BuildSecretsFoundException,
+        buildCheckNoSecrets,
+        buildFindSecrets,
+        buildSecretMinLength,
+        buildSecretsArchiveExtensions;
 export 'src/controller.dart' show BuildShellController;
 export 'src/web_build_size.dart'
     show

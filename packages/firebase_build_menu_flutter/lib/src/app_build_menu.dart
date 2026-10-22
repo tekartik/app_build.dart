@@ -16,6 +16,8 @@ void menuFirebaseWebAppBuilderContent({
     write('Target: ${builder.options.deployOptions.target}');
     write('ProjectId: ${builder.options.deployOptions.projectId}');
     write('Hosting: ${builder.options.deployOptions.hostingId}');
+    write('Entry point: ${builder.entryPoint ?? 'lib/main.dart'}');
+    write(menuBuildSecretsLine(builder.secrets));
   });
   var actionController = FirebaseWebAppActionController();
 
@@ -57,6 +59,9 @@ void menuFirebaseWebAppBuilderContent({
   item('clean', () async {
     cancel();
     await builder.clean();
+  });
+  item('check secrets (last build)', () async {
+    await menuCheckBuildSecrets(builder.webAppBuilder);
   });
 
   menu('web', () {
@@ -103,6 +108,12 @@ void menuFirebaseAppContent({
       cancel();
       for (var builder in builders) {
         await builder.clean();
+      }
+    });
+
+    item('check secrets (last builds)', () async {
+      for (var builder in builders) {
+        await menuCheckBuildSecrets(builder.webAppBuilder);
       }
     });
   });

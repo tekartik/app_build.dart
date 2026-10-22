@@ -66,9 +66,19 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   `serve`, fix it so that the browser keeps the same origin, hence its local
   data, from one run to the next. `copyWith(path:, deployDir:, webPort:,
   buildOptions:)` derives a variant.
-* `FlutterWebAppBuildOptions({renderer, wasm, target})`: `wasm: true` adds
-  `--wasm` (build and run); `target` is the entry point passed as `--target`
-  (`lib/main_prod.dart`), `lib/main.dart` when null. `renderer`
+* `FlutterWebAppBuildOptions({renderer, wasm, target, secrets})`: `wasm:
+  true` adds `--wasm` (build and run); `target` is the entry point passed as
+  `--target` (`lib/main_prod.dart`); when null, `lib/main_web.dart` if the
+  project has one, `lib/main.dart` otherwise (`builder.entryPoint`,
+  `flutterWebAppEntryPoint(path)`, also used by `flutterWebAppBuild`).
+  `secrets` (`List<BuildSecret>`, `package:tekartik_flutter_build/build_secrets.dart`)
+  makes every `buildOnly()` fail with a `BuildSecretsFoundException` when
+  `build/web` contains one of the values, before any copy or deploy
+  (`builder.checkNoSecrets()` checks the last build; `buildFindSecrets` /
+  `buildCheckNoSecrets` also search an apk, an aab or an ipa). Build the
+  list from the code that holds the values (`BuildSecret.fromMap`), list
+  what the code writes (encrypted literals and their password), not only
+  the decrypted values. `renderer`
   (`FlutterWebRenderer.canvasKit`; `html` is deprecated) is accepted for
   compatibility but no longer passed to flutter, which dropped
   `--web-renderer`. `copyWith(renderer:, wasm:, target:)` derives a variant

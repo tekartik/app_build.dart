@@ -51,18 +51,21 @@ declarations for firebase hosting builders. Dart VM only (`dart run`).
   `tekartik-firebase-build-hosting` skill for the hosting folder
   (`deploy/firebase/hosting`, `firebase.json`, `.firebaserc`).
 * `menuFirebaseWebAppBuilderContent(builder:)` declares, in the current
-  menu: an `enter` banner (path, target, project id, hosting id), `cancel
+  menu: an `enter` banner (path, target, project id, hosting id, entry
+  point, the build secrets checked), `cancel
   build/serve/deploy`, `build and deploy`, `build`, `serve` (hosting
   emulator), `deploy`, `build and serve`, `run (flutter run -d chrome)` (not
-  interactive, the menu keeps stdin), `clean`, and a `web` submenu with
+  interactive, the menu keeps stdin), `clean`, `check secrets (last build)`
+  (the `secrets` of the build options, see the `tekartik-flutter-build-web`
+  skill; every build checks them anyway), and a `web` submenu with
   the plain flutter web items (`run` in chrome, `serve` with dhttpd,
   `generateVersion`, `bumpVersion`, `Js size`...). Actions cancel the
   previous firebase action first through a shared
   `FirebaseWebAppActionController`.
 * `menuFirebaseAppContent(builders:)` declares a `target <target>` submenu
   per builder (each with the content above) plus an `all` submenu:
-  `build`, `build and deploy`, `deploy`, `clean` over every builder in
-  order. Always submenus, even with one builder.
+  `build`, `build and deploy`, `deploy`, `clean`, `check secrets (last
+  builds)` over every builder in order. Always submenus, even with one builder.
 * Add your own items next to them: `item('name', () async { ... }, cmd:
   'n')` (`cmd` gives a shortcut), `menu('name', () { ... })`, `write(...)`
   to print, `prompt('question')` to ask, `command((line) { ... })` for a
