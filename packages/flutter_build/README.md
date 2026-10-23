@@ -38,3 +38,8 @@ my_app -- --upgrade       # rebuild the app, then run it
 
 `FlutterAppHostLauncher` builds (`build`) and runs (`run`) the deployed
 release from `tool/` scripts.
+
+On macos the app is sandboxed (the flutter default) and cannot open a folder
+given on the command line: `macosSandbox: false` (both
+`flutterAppLauncherMain` and `FlutterAppHostLauncher`) disables the sandbox
+in the entitlements of the (git ignored) `macos/` project before each build.

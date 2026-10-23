@@ -6,7 +6,7 @@ description: >-
   dart executable building the release of the app sources on the first run
   and launching it, with package:tekartik_flutter_build/app_launcher.dart:
   flutterAppLauncherMain, FlutterAppHostLauncher (build, run, deployPath,
-  deployedExePath, isDeployed), findFlutterAppLauncherSourcePath,
+  deployedExePath, isDeployed, macosSandbox), findFlutterAppLauncherSourcePath,
   pubspecLockSourcePath.
 ---
 
@@ -40,6 +40,13 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
 * `FlutterAppHostLauncher(packageName:, path:)` gives the same build and run
   to `tool/` scripts and dev menus (`appBuilder`, `flavorBuilder` for the
   other build commands).
+* macos: the app is sandboxed by default (`PathAccessException`, `Operation
+  not permitted` on any folder not picked by the user). Pass
+  `macosSandbox: false` to `flutterAppLauncherMain` and
+  `FlutterAppHostLauncher` for a tool opening arbitrary paths; `build`
+  applies it to the entitlements of the `macos/` project, call
+  `launcher.createHostProject()` before `flavorBuilder.runHost()` for a
+  debug run. The release must be rebuilt (`<app> -- -u`).
 
 ## Examples
 

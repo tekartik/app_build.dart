@@ -107,6 +107,14 @@ packages:
       basenameWithoutExtension(launcher.deployedExePath),
       'tkassetexplorer',
     );
+    expect(launcher.macosSandbox, isNull);
+    expect(
+      FlutterAppHostLauncher(
+        packageName: 'tkassetexplorer',
+        macosSandbox: false,
+      ).macosSandbox,
+      isFalse,
+    );
   });
 
   test('findFlutterAppLauncherSourcePath', () async {

@@ -19,6 +19,12 @@ class FlutterAppHostLauncher {
   /// The app (flutter project) path, absolute.
   final String path;
 
+  /// The macos app sandbox, set in the entitlements of the macos project
+  /// before each build. False lets the app open any file (a folder given
+  /// on the command line), null leaves the project as created (sandboxed,
+  /// the flutter default).
+  final bool? macosSandbox;
+
   /// The app builder.
   late final appBuilder = FlutterAppBuilder(
     context: FlutterAppContext(path: path),
@@ -29,8 +35,11 @@ class FlutterAppHostLauncher {
 
   /// Launcher of the app [packageName] at [path] (the current directory by
   /// default).
-  FlutterAppHostLauncher({required this.packageName, String? path})
-    : path = normalize(absolute(path ?? '.'));
+  FlutterAppHostLauncher({
+    required this.packageName,
+    String? path,
+    this.macosSandbox,
+  }) : path = normalize(absolute(path ?? '.'));
 
   /// The deployed release folder, `deploy/linux` on linux.
   String get deployPath => join(path, flavorBuilder.hostDeployPath);
@@ -55,10 +64,26 @@ class FlutterAppHostLauncher {
   /// True when the release was built and deployed.
   bool get isDeployed => File(deployedExePath).existsSync();
 
+  /// Creates the platform project (`linux/`, git ignored) when missing, then
+  /// applies [macosSandbox] on macos.
+  ///
+  /// Called by [build], call it before `flavorBuilder.runHost()` (debug).
+  Future<void> createHostProject() async {
+    await flavorBuilder.createHostProject();
+    if (Platform.isMacOS && macosSandbox != null) {
+      if (macosSandbox!) {
+        await appBuilder.macosEnableSandbox();
+      } else {
+        await appBuilder.macosDisableSandbox();
+      }
+    }
+  }
+
   /// Builds the release and copies it to [deployPath].
   ///
   /// The platform project (`linux/`, git ignored) is created when missing.
   Future<void> build() async {
+    await createHostProject();
     await flavorBuilder.buildHost();
   }
 
@@ -81,12 +106,15 @@ class FlutterAppHostLauncher {
 ///
 /// [appArgumentsUsage] (`[folder]`) and [description] are shown in the help.
 /// [libraryPath] is a library of the app package, used to find its sources.
+/// [macosSandbox] false disables the macos app sandbox, see
+/// [FlutterAppHostLauncher.macosSandbox].
 Future<void> flutterAppLauncherMain(
   List<String> arguments, {
   required String packageName,
   String appArgumentsUsage = '',
   String? description,
   String libraryPath = 'main.dart',
+  bool? macosSandbox,
 }) async {
   var separator = arguments.indexOf('--');
   var appArguments = separator < 0
@@ -146,6 +174,7 @@ Future<void> flutterAppLauncherMain(
   var launcher = FlutterAppHostLauncher(
     packageName: packageName,
     path: sourcePath,
+    macosSandbox: macosSandbox,
   );
   if (options.flag('upgrade') || !launcher.isDeployed) {
     stdout.writeln('Building $packageName in $sourcePath');
