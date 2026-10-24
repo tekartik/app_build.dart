@@ -104,13 +104,15 @@ class FlutterAppHostLauncher {
 /// the arguments before `--`, building it first when needed. The launcher
 /// options come after `--`.
 ///
-/// [appArgumentsUsage] (`[folder]`) and [description] are shown in the help.
+/// [appArgumentsUsage] (`[folder]`) and [description] are shown in the help,
+/// with [commandName] (the `executables:` name, [packageName] by default).
 /// [libraryPath] is a library of the app package, used to find its sources.
 /// [macosSandbox] false disables the macos app sandbox, see
 /// [FlutterAppHostLauncher.macosSandbox].
 Future<void> flutterAppLauncherMain(
   List<String> arguments, {
   required String packageName,
+  String? commandName,
   String appArgumentsUsage = '',
   String? description,
   String libraryPath = 'main.dart',
@@ -130,7 +132,7 @@ Future<void> flutterAppLauncherMain(
     ..addFlag('help', abbr: 'h', negatable: false, help: 'This help.');
   void usage(IOSink out) {
     out.writeln(
-      'Usage: $packageName '
+      'Usage: ${commandName ?? packageName} '
       '${appArgumentsUsage.isEmpty ? '' : '$appArgumentsUsage '}[-- options]',
     );
     out.writeln();

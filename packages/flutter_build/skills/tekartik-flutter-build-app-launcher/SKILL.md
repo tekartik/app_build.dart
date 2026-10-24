@@ -21,8 +21,9 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
 * Add `tekartik_flutter_build` as a regular dependency of the app (the
   executable runs with the package dependencies), `executables: <app>:` in
   `pubspec.yaml`, and a `bin/<app>.dart` calling `flutterAppLauncherMain`
-  with the app `packageName`. The flutter executable built is named after the
-  package (the default of `flutter create`).
+  with the app `packageName` (and `commandName` when the command is not
+  named after the package, for the help). The flutter executable built is
+  named after the package (the default of `flutter create`).
 * Never import `app_launcher.dart` from the app code: it is io only and
   pulls the build tools.
 * The arguments before `--` go to the app, the launcher options come after:
