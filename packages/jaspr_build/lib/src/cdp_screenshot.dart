@@ -147,6 +147,8 @@ class StaticSiteServer {
         '.jpg' || '.jpeg' => ContentType('image', 'jpeg'),
         '.ico' => ContentType('image', 'x-icon'),
         '.woff2' => ContentType('font', 'woff2'),
+        // CanvasKit and skwasm only compile a wasm served as such.
+        '.wasm' => ContentType('application', 'wasm'),
         '.xml' => ContentType('application', 'xml', charset: 'utf-8'),
         '.txt' || '.md' => ContentType.text,
         _ => ContentType.binary,
