@@ -97,6 +97,33 @@ class FlutterAppHostLauncher {
     );
     return await process.exitCode;
   }
+
+  /// Runs the deployed release with [arguments] (see [run]), building it
+  /// first when not deployed yet or when [rebuild] is true.
+  Future<int> buildIfNeededAndRun({
+    List<String> arguments = const [],
+    bool rebuild = false,
+  }) async {
+    if (rebuild || !isDeployed) {
+      stdout.writeln('Building $packageName in $path');
+      await build();
+    }
+    return await run(arguments);
+  }
+
+  /// Runs the app in debug (`flutter run -d <platform>`), the platform
+  /// project created first (see [createHostProject]).
+  Future<void> runDebug() async {
+    await createHostProject();
+    await flavorBuilder.runHost();
+  }
+
+  /// Installs the global command (the `executables:` of the pubspec) with
+  /// `dart install` of the sources at [path]. The release is built on its
+  /// first run.
+  Future<void> install() async {
+    await Shell(workingDirectory: path).run('dart install .');
+  }
 }
 
 /// Main of the global command of a flutter app (`bin/<packageName>.dart`):
@@ -178,17 +205,15 @@ Future<void> flutterAppLauncherMain(
     path: sourcePath,
     macosSandbox: macosSandbox,
   );
-  if (options.flag('upgrade') || !launcher.isDeployed) {
-    stdout.writeln('Building $packageName in $sourcePath');
-    try {
-      await launcher.build();
-    } on ShellException catch (e) {
-      stderr.writeln('Build failed: ${e.message}');
-      exitCode = 1;
-      return;
-    }
+  try {
+    exitCode = await launcher.buildIfNeededAndRun(
+      arguments: appArguments,
+      rebuild: options.flag('upgrade'),
+    );
+  } on ShellException catch (e) {
+    stderr.writeln('Build failed: ${e.message}');
+    exitCode = 1;
   }
-  exitCode = await launcher.run(appArguments);
 }
 
 /// Finds the sources of the running launcher of [packageName], null if not

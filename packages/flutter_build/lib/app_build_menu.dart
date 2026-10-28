@@ -5,3 +5,4 @@ export 'src/app_build_menu.dart'
         menuCheckBuildSecrets,
         menuFlutterWebAppBuilderContent,
         menuFlutterWebAppContent;
+export 'src/app_launcher_menu.dart' show menuFlutterAppHostLauncherContent;

@@ -1,6 +1,6 @@
 name: tekartik_flutter_build
 description: Flutter build and deploy helpers
-version: 0.2.3
+version: 0.2.4
 publish_to: none
 
 environment:

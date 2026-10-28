@@ -5,9 +5,12 @@ description: >-
   as a global command with dart install or dart pub global activate, the
   dart executable building the release of the app sources on the first run
   and launching it, with package:tekartik_flutter_build/app_launcher.dart:
-  flutterAppLauncherMain, FlutterAppHostLauncher (build, run, deployPath,
-  deployedExePath, isDeployed, macosSandbox), findFlutterAppLauncherSourcePath,
-  pubspecLockSourcePath.
+  flutterAppLauncherMain, FlutterAppHostLauncher (build, run,
+  buildIfNeededAndRun, runDebug, install, deployPath, deployedExePath,
+  isDeployed, macosSandbox), findFlutterAppLauncherSourcePath,
+  pubspecLockSourcePath, and the dev menu items of
+  package:tekartik_flutter_build/app_build_menu.dart
+  menuFlutterAppHostLauncherContent.
 ---
 
 # Flutter desktop app as a global command with tekartik_flutter_build
@@ -40,7 +43,14 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   checkout in the pub cache.
 * `FlutterAppHostLauncher(packageName:, path:)` gives the same build and run
   to `tool/` scripts and dev menus (`appBuilder`, `flavorBuilder` for the
-  other build commands).
+  other build commands): `buildIfNeededAndRun(arguments:, rebuild:)` builds
+  when not deployed, `runDebug()` runs `flutter run` on the host,
+  `install()` runs `dart install .` in the sources.
+* In `tool/build_menu.dart`, `menuFlutterAppHostLauncherContent(launcher:,
+  runArguments: {label: arguments})` adds build and run, build, run, one run
+  item per `runArguments` entry, debug run and install; follow it with
+  `menuFlutterAppContent(builder: launcher.appBuilder)` of
+  tekartik_build_menu_flutter for the other build commands.
 * macos: the app is sandboxed by default (`PathAccessException`, `Operation
   not permitted` on any folder not picked by the user). Pass
   `macosSandbox: false` to `flutterAppLauncherMain` and
@@ -65,7 +75,7 @@ Future<void> main(List<String> arguments) => flutterAppLauncherMain(
 );
 ```
 
-### tool/build_and_run_release.dart
+### tool/run_release.dart
 
 ```dart
 import 'package:tekartik_flutter_build/app_launcher.dart';
@@ -73,9 +83,27 @@ import 'package:tekartik_flutter_build/app_launcher.dart';
 final launcher = FlutterAppHostLauncher(packageName: 'my_app');
 
 Future<void> main(List<String> arguments) async {
-  if (!launcher.isDeployed) {
-    await launcher.build();
-  }
-  await launcher.run(arguments);
+  await launcher.buildIfNeededAndRun(arguments: arguments);
+}
+```
+
+### tool/build_menu.dart
+
+```dart
+import 'package:tekartik_build_menu_flutter/app_build_menu.dart';
+import 'package:tekartik_flutter_build/app_build_menu.dart'
+    show menuFlutterAppHostLauncherContent;
+import 'package:tekartik_flutter_build/app_launcher.dart';
+
+var appLauncher = FlutterAppHostLauncher(packageName: 'my_app');
+
+Future<void> main(List<String> arguments) async {
+  mainMenuConsole(arguments, () {
+    menuFlutterAppHostLauncherContent(
+      launcher: appLauncher,
+      runArguments: {'on the current folder': ['.']},
+    );
+    menuFlutterAppContent(builder: appLauncher.appBuilder);
+  });
 }
 ```

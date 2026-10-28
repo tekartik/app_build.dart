@@ -1,6 +1,8 @@
 @TestOn('vm')
 library;
 
+import 'dart:io';
+
 import 'package:path/path.dart';
 import 'package:tekartik_flutter_build/app_launcher.dart';
 import 'package:test/test.dart';
@@ -116,6 +118,26 @@ packages:
       isFalse,
     );
   });
+
+  test('buildIfNeededAndRun deployed', () async {
+    var dir = await Directory.systemTemp.createTemp('app_launcher_test');
+    try {
+      var launcher = FlutterAppHostLauncher(
+        packageName: 'my_app',
+        path: dir.path,
+      );
+      expect(launcher.isDeployed, isFalse);
+      // A deployed release exiting with 3, no build.
+      var exe = File(launcher.deployedExePath);
+      await exe.parent.create(recursive: true);
+      await exe.writeAsString('#!/bin/sh\nexit 3\n');
+      await Process.run('chmod', ['+x', exe.path]);
+      expect(launcher.isDeployed, isTrue);
+      expect(await launcher.buildIfNeededAndRun(arguments: ['.']), 3);
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  }, testOn: '!windows');
 
   test('findFlutterAppLauncherSourcePath', () async {
     // This package (dart run), from one of its libraries.

@@ -36,8 +36,31 @@ my_app .                  # the arguments go to the app
 my_app -- --upgrade       # rebuild the app, then run it
 ```
 
-`FlutterAppHostLauncher` builds (`build`) and runs (`run`) the deployed
-release from `tool/` scripts.
+`FlutterAppHostLauncher` builds (`build`) and runs (`run`,
+`buildIfNeededAndRun`) the deployed release from `tool/` scripts, runs the
+debug version (`runDebug`) and installs the command (`install`, `dart install
+.` of the sources). `menuFlutterAppHostLauncherContent` (`app_build_menu.dart`)
+adds these to a dev menu:
+
+```dart
+// tool/build_menu.dart
+import 'package:tekartik_build_menu_flutter/app_build_menu.dart';
+import 'package:tekartik_flutter_build/app_build_menu.dart'
+    show menuFlutterAppHostLauncherContent;
+import 'package:tekartik_flutter_build/app_launcher.dart';
+
+var appLauncher = FlutterAppHostLauncher(packageName: 'my_app');
+
+Future<void> main(List<String> arguments) async {
+  mainMenuConsole(arguments, () {
+    menuFlutterAppHostLauncherContent(
+      launcher: appLauncher,
+      runArguments: {'on the current folder': ['.']},
+    );
+    menuFlutterAppContent(builder: appLauncher.appBuilder);
+  });
+}
+```
 
 On macos the app is sandboxed (the flutter default) and cannot open a folder
 given on the command line: `macosSandbox: false` (both
