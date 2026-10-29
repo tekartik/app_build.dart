@@ -13,4 +13,5 @@ workspace:
   - packages/jaspr_build
   - packages/repo_support
   - packages/web_publish
+  - packages/web_worker_build
   - example/demo_flutter_app

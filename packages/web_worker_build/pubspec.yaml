@@ -1,0 +1,24 @@
+name: tekartik_web_worker_build
+description: >-
+  Builds a Dart program into the JavaScript file that a web app loads besides
+  its page (a web worker, a shared worker, an AudioWorklet module) with
+  dart2js, again only when the Dart SDK or a dependency changed.
+version: 0.1.0
+publish_to: none
+
+environment:
+  sdk: ^3.12.0
+
+# Kept light: the packages that ship a worker depend on it (their setup
+# library), so every app using them does.
+dependencies:
+  path: ">=1.9.1"
+
+dev_dependencies:
+  lints: ">=6.1.0"
+  tekartik_lints:
+    git:
+      url: https://github.com/tekartik/common.dart
+      path: packages/lints
+  test: ">=1.31.0"
+resolution: workspace
