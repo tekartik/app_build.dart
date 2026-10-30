@@ -56,6 +56,18 @@ void main() {
             )
             as Map;
     expect(meta, result.key);
+    // The generated main, named after the script.
+    expect(
+      File(
+        p.join(
+          '.dart_tool',
+          'tekartik_web_worker_build',
+          'test_hello_worker',
+          'hello_worker_main.dart',
+        ),
+      ).readAsStringSync(),
+      meta['main'],
+    );
     expect(meta['sdk'], Platform.version);
     expect(meta['compiler'], ['-O2']);
     expect((meta['packages'] as Map).keys, containsAll(['path']));

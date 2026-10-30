@@ -38,8 +38,8 @@ class WebWorkerScript {
   /// The source of a generated main, for a main that depends on the
   /// packages of the app (a plugin registered when the app depends on it).
   ///
-  /// It is compiled from the build folder: it can only import `package:`
-  /// uris.
+  /// It is written as `<filename without extension>_main.dart` in the build
+  /// folder and compiled from there: it can only import `package:` uris.
   final String Function(ProjectPackages packages)? mainSource;
 
   /// The packages whose sources make the script, their dependencies added,
@@ -71,7 +71,11 @@ class WebWorkerScript {
        );
 
   /// The name of the build folder in `.dart_tool/<package>/`.
-  String get buildName => name ?? p.basenameWithoutExtension(filename);
+  String get buildName => name ?? _scriptName;
+
+  /// [filename] without its extension, the name of the generated main and of
+  /// the dart2js output in the build folder.
+  String get _scriptName => p.basenameWithoutExtension(filename);
 
   /// The command running [setupMain] in the `bin/` of [package].
   String get setupCommand => 'dart run $package:setup';
@@ -137,7 +141,7 @@ class WebWorkerScript {
       await work.create(recursive: true);
       File entryFile;
       if (main != null) {
-        entryFile = File(p.join(work.path, '${buildName}_main.dart'));
+        entryFile = File(p.join(work.path, '${_scriptName}_main.dart'));
         await entryFile.writeAsString(main);
       } else {
         var file = packages.libraryFile(entryUri!);
@@ -146,7 +150,7 @@ class WebWorkerScript {
         }
         entryFile = file;
       }
-      var compiled = File(p.join(work.path, '$buildName.dart.js'));
+      var compiled = File(p.join(work.path, '$_scriptName.dart.js'));
       var arguments = [
         'compile',
         'js',
