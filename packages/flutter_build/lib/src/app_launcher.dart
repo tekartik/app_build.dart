@@ -64,6 +64,32 @@ class FlutterAppHostLauncher {
   /// True when the release was built and deployed.
   bool get isDeployed => File(deployedExePath).existsSync();
 
+  /// The pids of the running instances of the deployed release (the
+  /// processes of [deployedExePath], whatever their arguments, see
+  /// `ShellProcesses.findByExecutable`), empty when none is running; the
+  /// current process excluded.
+  Future<List<int>> runningPids() async => [
+    for (var processPid in await ShellProcesses.findByExecutable(
+      deployedExePath,
+    ))
+      if (processPid != pid) processPid,
+  ];
+
+  /// Kills the running instances of the deployed release ([runningPids]) and
+  /// their descendants (the processes they started): sigterm, then sigkill
+  /// for the ones still running after [timeout].
+  ///
+  /// Returns their pids, empty when none was running.
+  Future<List<int>> kill({
+    Duration timeout = const Duration(seconds: 5),
+  }) async {
+    var pids = await runningPids();
+    if (pids.isNotEmpty) {
+      await ShellProcesses.kill(pids, tree: true, timeout: timeout);
+    }
+    return pids;
+  }
+
   /// Creates the platform project (`linux/`, git ignored) when missing, then
   /// applies [macosSandbox] on macos.
   ///
@@ -90,12 +116,15 @@ class FlutterAppHostLauncher {
   /// Runs the deployed release in the current directory with [arguments],
   /// returns its exit code.
   Future<int> run([List<String> arguments = const []]) async {
-    var process = await Process.start(
-      deployedExePath,
-      arguments,
-      mode: ProcessStartMode.inheritStdio,
+    var shell = Shell(
+      options: ShellOptions(
+        throwOnError: false,
+        verbose: false,
+        mode: ProcessStartMode.inheritStdio,
+      ),
     );
-    return await process.exitCode;
+    var result = await shell.runExecutableArguments(deployedExePath, arguments);
+    return result.exitCode;
   }
 
   /// Runs the deployed release with [arguments] (see [run]), building it
@@ -129,7 +158,9 @@ class FlutterAppHostLauncher {
 /// Main of the global command of a flutter app (`bin/<packageName>.dart`):
 /// `<packageName> [app arguments] [-- --upgrade]` runs the built app with
 /// the arguments before `--`, building it first when needed. The launcher
-/// options come after `--`.
+/// options come after `--`: `--kill` kills the running app first (a single
+/// instance app would show it instead of the new one), `--upgrade` kills it
+/// too, then rebuilds it.
 ///
 /// [appArgumentsUsage] (`[folder]`) and [description] are shown in the help,
 /// with [commandName] (the `executables:` name, [packageName] by default).
@@ -154,7 +185,17 @@ Future<void> flutterAppLauncherMain(
       'upgrade',
       abbr: 'u',
       negatable: false,
-      help: 'Rebuild the app (release) before running it.',
+      help:
+          'Kill the running app, rebuild it (release), then run it '
+          '(implies --kill).',
+    )
+    ..addFlag(
+      'kill',
+      abbr: 'k',
+      negatable: false,
+      help:
+          'Kill the running app (the deployed release and the processes it '
+          'started) first.',
     )
     ..addFlag('help', abbr: 'h', negatable: false, help: 'This help.');
   void usage(IOSink out) {
@@ -205,10 +246,21 @@ Future<void> flutterAppLauncherMain(
     path: sourcePath,
     macosSandbox: macosSandbox,
   );
+  var upgrade = options.flag('upgrade');
+  // An upgrade replaces the running release: a single instance app would
+  // show the old one, Windows cannot replace its files.
+  if (options.flag('kill') || upgrade) {
+    var killed = await launcher.kill();
+    stdout.writeln(
+      killed.isEmpty
+          ? '$packageName is not running'
+          : 'Killed $packageName (pid ${killed.join(', ')})',
+    );
+  }
   try {
     exitCode = await launcher.buildIfNeededAndRun(
       arguments: appArguments,
-      rebuild: options.flag('upgrade'),
+      rebuild: upgrade,
     );
   } on ShellException catch (e) {
     stderr.writeln('Build failed: ${e.message}');

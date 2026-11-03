@@ -1,9 +1,11 @@
 @TestOn('vm')
 library;
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:path/path.dart';
+import 'package:process_run/shell.dart';
 import 'package:tekartik_flutter_build/app_launcher.dart';
 import 'package:test/test.dart';
 
@@ -131,13 +133,75 @@ packages:
       var exe = File(launcher.deployedExePath);
       await exe.parent.create(recursive: true);
       await exe.writeAsString('#!/bin/sh\nexit 3\n');
-      await Process.run('chmod', ['+x', exe.path]);
+      await Shell(verbose: false).run('chmod +x ${shellArgument(exe.path)}');
       expect(launcher.isDeployed, isTrue);
       expect(await launcher.buildIfNeededAndRun(arguments: ['.']), 3);
     } finally {
       await dir.delete(recursive: true);
     }
   }, testOn: '!windows');
+
+  test(
+    'runningPids and kill',
+    () async {
+      var dir = await Directory.systemTemp.createTemp('app_launcher_test');
+      try {
+        var launcher = FlutterAppHostLauncher(
+          packageName: 'my_app',
+          path: dir.path,
+        );
+        expect(await launcher.runningPids(), isEmpty);
+        expect(await launcher.kill(), isEmpty);
+        // A real executable as the deployed release, a compiled sleeper (a
+        // copy of sleep fails: coreutils multi-call binary) starting a child,
+        // another executable (sleep): only found as its descendant.
+        var exe = File(launcher.deployedExePath);
+        await exe.parent.create(recursive: true);
+        var source = File(join(dir.path, 'sleeper.dart'));
+        await source.writeAsString(
+          "import 'dart:io';\n\n"
+          'Future<void> main() async {\n'
+          "  await Process.start('sleep', ['30']);\n"
+          '  await Future<void>.delayed(const Duration(seconds: 30));\n'
+          '}\n',
+        );
+        var shell = Shell(verbose: false, throwOnError: false);
+        var compile = await shell.runExecutableArguments('dart', [
+          'compile',
+          'exe',
+          source.path,
+          '-o',
+          exe.path,
+        ]);
+        expect(compile.exitCode, 0, reason: compile.errText);
+        var started = Completer<Process>();
+        var run = shell.runExecutableArguments(exe.path, [
+          '--any',
+        ], onProcess: started.complete);
+        try {
+          var process = await started.future;
+          expect(await launcher.runningPids(), [process.pid]);
+          var descendants = <int>[];
+          for (var i = 0; i < 100 && descendants.isEmpty; i++) {
+            descendants = await ShellProcesses.descendantsOf(process.pid);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+          }
+          expect(descendants, hasLength(1));
+          expect(await launcher.kill(), [process.pid]);
+          expect((await run).exitCode, isNot(0));
+          expect(await launcher.runningPids(), isEmpty);
+          // Its child too.
+          expect(await ShellProcesses.isRunning(descendants.single), isFalse);
+        } finally {
+          shell.kill(ProcessSignal.sigkill);
+        }
+      } finally {
+        await dir.delete(recursive: true);
+      }
+    },
+    testOn: '!windows',
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
 
   test('findFlutterAppLauncherSourcePath', () async {
     // This package (dart run), from one of its libraries.

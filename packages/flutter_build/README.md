@@ -33,7 +33,8 @@ Future<void> main(List<String> arguments) => flutterAppLauncherMain(
 ```bash
 dart install "my_app@{path: $PWD}"     # or dart pub global activate --source path .
 my_app .                  # the arguments go to the app
-my_app -- --upgrade       # rebuild the app, then run it
+my_app -- --upgrade       # kill the running app, rebuild it, then run it
+my_app -- --kill          # kill the running app first, then run it
 ```
 
 `FlutterAppHostLauncher` builds (`build`) and runs (`run`,

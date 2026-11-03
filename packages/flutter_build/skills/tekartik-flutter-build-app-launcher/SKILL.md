@@ -30,8 +30,12 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
 * Never import `app_launcher.dart` from the app code: it is io only and
   pulls the build tools.
 * The arguments before `--` go to the app, the launcher options come after:
-  `<app> -- --upgrade` (`-u`) rebuilds the release before running it,
-  `<app> -- --help` shows the usage.
+  `<app> -- --kill` (`-k`) first kills the running instances of the
+  deployed release and their descendants (`ShellProcesses` of process_run:
+  sigterm, sigkill after 5s; a single instance app would show the old one),
+  `<app> -- --upgrade` (`-u`) kills them too, then rebuilds the release
+  before running it (a restart on new sources), `<app> -- --help` shows the
+  usage.
 * The release is built with `flutter build <host platform>` and copied to
   `deploy/<platform>` of the sources (git ignore `deploy/`); the platform
   project is created when missing. It runs from there so that a `flutter
@@ -45,7 +49,9 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   to `tool/` scripts and dev menus (`appBuilder`, `flavorBuilder` for the
   other build commands): `buildIfNeededAndRun(arguments:, rebuild:)` builds
   when not deployed, `runDebug()` runs `flutter run` on the host,
-  `install()` runs `dart install .` in the sources.
+  `install()` runs `dart install .` in the sources, `runningPids()` and
+  `kill()` find and stop the running deployed release (`ShellProcesses` of
+  process_run 1.4.2, the descendants too).
 * In `tool/build_menu.dart`, `menuFlutterAppHostLauncherContent(launcher:,
   runArguments: {label: arguments})` adds build and run, build, run, one run
   item per `runArguments` entry, debug run and install; follow it with
