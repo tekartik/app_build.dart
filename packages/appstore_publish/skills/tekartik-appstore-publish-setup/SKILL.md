@@ -43,10 +43,11 @@ to the App Store Connect REST API.
     `~/.private_keys` or `~/.appstoreconnect/private_keys`. Preferred: no
     two-factor prompt, works in CI.
   * `AppStoreCredentialsUserPassword(username:, password:)`: an Apple ID
-    and an app-specific password (`-u`/`-p`).
+    and an app-specific password: `-u <username> -p @env:TEKARTIK_APPSTORE_PUBLISH_PASSWORD`,
+    the password itself is handed in the environment of the command, so it
+    is not printed with the command nor kept in a `ShellException`.
   Read them from the environment or a git-ignored file
-  (`.local/appstore.json`), never hardcode them; they end up on the command
-  line, so prefer the API key on shared machines.
+  (`.local/appstore.json`), never hardcode them; prefer the API key.
 * `AppStorePublisher({credentials, path})`: `path` is the working directory
   of the shell (default: current directory), relevant when `ipaPath` is
   relative. The `issuerId:`/`apiKey:` constructor parameters are
@@ -59,7 +60,9 @@ to the App Store Connect REST API.
   * `uploadIosApp(ipaPath:, useTransporter:)`: `xcrun altool --upload-app`
     by default; `useTransporter: true` uses
     `xcrun iTMSTransporter -m upload -assetFile <ipa>` instead (same
-    credentials), useful when altool is flaky on large uploads.
+    credentials; with an API key it passes altool's `--apiKey`/`--apiIssuer`,
+    not checked against iTMSTransporter's single dash options), useful when
+    altool is flaky on large uploads.
   * `validateAndUploadIosApp(ipaPath:)`: the two in sequence with altool.
   * `kill()`: kills the command in progress (returns `true` when one was
     running); wire it to a `cancel` menu item or a signal handler.

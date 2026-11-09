@@ -1,5 +1,10 @@
 import 'package:process_run/process_run.dart';
 
+/// The environment variable the Apple ID password of
+/// [AppStoreCredentialsUserPassword] is handed in to `xcrun altool` and
+/// `xcrun iTMSTransporter` (`-p @env:<name>`). Not exported.
+const appStorePasswordEnvVar = 'TEKARTIK_APPSTORE_PUBLISH_PASSWORD';
+
 /// Base type for credentials accepted by [AppStorePublisher]. Use either
 /// [AppStoreCredentialsUserPassword] or [AppStoreCredentialsApiKeyIssuerId].
 abstract class AppStoreCredentials {}
@@ -53,7 +58,20 @@ class AppStorePublisher {
   /// to use the current directory.
   final String? path;
 
-  late final _shell = Shell(workingDirectory: path);
+  late final _shell = () {
+    var credentials = this.credentials;
+    if (credentials is AppStoreCredentialsUserPassword) {
+      // The password stays out of the command line (echoed by the shell,
+      // kept in a ShellException message, visible in `ps`): the tools read it
+      // from the environment (`-p @env:<name>`).
+      return Shell(
+        workingDirectory: path,
+        environment: ShellEnvironment()
+          ..vars[appStorePasswordEnvVar] = credentials.password,
+      );
+    }
+    return Shell(workingDirectory: path);
+  }();
 
   /// Creates a publisher that authenticates with [credentials] and runs
   /// commands from [path] (defaults to the current directory).
@@ -87,7 +105,7 @@ class AppStorePublisher {
   String _credentialsArgs() {
     var credentials = this.credentials;
     if (credentials is AppStoreCredentialsUserPassword) {
-      return ' -u ${shellArgument(credentials.username)} -p ${shellArgument(credentials.password)}';
+      return ' -u ${shellArgument(credentials.username)} -p @env:$appStorePasswordEnvVar';
     } else if (credentials is AppStoreCredentialsApiKeyIssuerId) {
       return ' --apiKey ${shellArgument(credentials.apiKey)} --apiIssuer ${shellArgument(credentials.issuerId)}';
     }
