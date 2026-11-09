@@ -37,6 +37,10 @@ my_app -- --upgrade       # kill the running app, rebuild it, then run it
 my_app -- --kill          # kill the running app first, then run it
 ```
 
+`--kill` and `--upgrade` kill the processes the app started too; an app
+whose processes must outlive it (sessions held by `dtach`) passes `killTree:
+false` to `flutterAppLauncherMain`: only the app is killed, as if closed.
+
 `FlutterAppHostLauncher` builds (`build`) and runs (`run`,
 `buildIfNeededAndRun`) the deployed release from `tool/` scripts, runs the
 debug version (`runDebug`) and installs the command (`install`, `dart install

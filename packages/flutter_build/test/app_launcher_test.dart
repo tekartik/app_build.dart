@@ -192,6 +192,32 @@ packages:
           expect(await launcher.runningPids(), isEmpty);
           // Its child too.
           expect(await ShellProcesses.isRunning(descendants.single), isFalse);
+
+          // killTree false: the app only, its child keeps running.
+          var appOnly = FlutterAppHostLauncher(
+            packageName: 'my_app',
+            path: dir.path,
+            killTree: false,
+          );
+          started = Completer<Process>();
+          run = shell.runExecutableArguments(exe.path, [
+            '--any',
+          ], onProcess: started.complete);
+          process = await started.future;
+          descendants = [];
+          for (var i = 0; i < 100 && descendants.isEmpty; i++) {
+            descendants = await ShellProcesses.descendantsOf(process.pid);
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+          }
+          expect(descendants, hasLength(1));
+          try {
+            expect(await appOnly.kill(), [process.pid]);
+            expect((await run).exitCode, isNot(0));
+            expect(await appOnly.runningPids(), isEmpty);
+            expect(await ShellProcesses.isRunning(descendants.single), isTrue);
+          } finally {
+            await ShellProcesses.kill(descendants);
+          }
         } finally {
           shell.kill(ProcessSignal.sigkill);
         }

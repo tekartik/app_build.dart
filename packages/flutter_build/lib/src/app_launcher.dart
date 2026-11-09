@@ -25,6 +25,12 @@ class FlutterAppHostLauncher {
   /// the flutter default).
   final bool? macosSandbox;
 
+  /// True (the default) when [kill] kills the descendants of the app too
+  /// (the processes it started). False kills the app only, as if it was
+  /// closed: an app whose processes must outlive it (sessions held by
+  /// `dtach`, a server it detached) keeps them across an upgrade.
+  final bool killTree;
+
   /// The app builder.
   late final appBuilder = FlutterAppBuilder(
     context: FlutterAppContext(path: path),
@@ -39,6 +45,7 @@ class FlutterAppHostLauncher {
     required this.packageName,
     String? path,
     this.macosSandbox,
+    this.killTree = true,
   }) : path = normalize(absolute(path ?? '.'));
 
   /// The deployed release folder, `deploy/linux` on linux.
@@ -75,9 +82,9 @@ class FlutterAppHostLauncher {
       if (processPid != pid) processPid,
   ];
 
-  /// Kills the running instances of the deployed release ([runningPids]) and
-  /// their descendants (the processes they started): sigterm, then sigkill
-  /// for the ones still running after [timeout].
+  /// Kills the running instances of the deployed release ([runningPids]) and,
+  /// when [killTree], their descendants (the processes they started):
+  /// sigterm, then sigkill for the ones still running after [timeout].
   ///
   /// Returns their pids, empty when none was running.
   Future<List<int>> kill({
@@ -85,7 +92,7 @@ class FlutterAppHostLauncher {
   }) async {
     var pids = await runningPids();
     if (pids.isNotEmpty) {
-      await ShellProcesses.kill(pids, tree: true, timeout: timeout);
+      await ShellProcesses.kill(pids, tree: killTree, timeout: timeout);
     }
     return pids;
   }
@@ -166,7 +173,9 @@ class FlutterAppHostLauncher {
 /// with [commandName] (the `executables:` name, [packageName] by default).
 /// [libraryPath] is a library of the app package, used to find its sources.
 /// [macosSandbox] false disables the macos app sandbox, see
-/// [FlutterAppHostLauncher.macosSandbox].
+/// [FlutterAppHostLauncher.macosSandbox]. [killTree] false makes `--kill`
+/// and `--upgrade` kill the app only, not the processes it started, see
+/// [FlutterAppHostLauncher.killTree].
 Future<void> flutterAppLauncherMain(
   List<String> arguments, {
   required String packageName,
@@ -175,6 +184,7 @@ Future<void> flutterAppLauncherMain(
   String? description,
   String libraryPath = 'main.dart',
   bool? macosSandbox,
+  bool killTree = true,
 }) async {
   var separator = arguments.indexOf('--');
   var appArguments = separator < 0
@@ -193,9 +203,11 @@ Future<void> flutterAppLauncherMain(
       'kill',
       abbr: 'k',
       negatable: false,
-      help:
-          'Kill the running app (the deployed release and the processes it '
-          'started) first.',
+      help: killTree
+          ? 'Kill the running app (the deployed release and the processes it '
+                'started) first.'
+          : 'Kill the running app (the deployed release; the processes it '
+                'started keep running) first.',
     )
     ..addFlag('help', abbr: 'h', negatable: false, help: 'This help.');
   void usage(IOSink out) {
@@ -245,6 +257,7 @@ Future<void> flutterAppLauncherMain(
     packageName: packageName,
     path: sourcePath,
     macosSandbox: macosSandbox,
+    killTree: killTree,
   );
   var upgrade = options.flag('upgrade');
   // An upgrade replaces the running release: a single instance app would

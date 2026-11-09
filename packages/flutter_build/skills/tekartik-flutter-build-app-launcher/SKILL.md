@@ -35,7 +35,9 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   sigterm, sigkill after 5s; a single instance app would show the old one),
   `<app> -- --upgrade` (`-u`) kills them too, then rebuilds the release
   before running it (a restart on new sources), `<app> -- --help` shows the
-  usage.
+  usage. `killTree: false` (`flutterAppLauncherMain`,
+  `FlutterAppHostLauncher`, 0.2.5) kills the app only, as if it was closed:
+  for an app whose processes must outlive it (sessions held by `dtach`).
 * The release is built with `flutter build <host platform>` and copied to
   `deploy/<platform>` of the sources (git ignore `deploy/`); the platform
   project is created when missing. It runs from there so that a `flutter
@@ -51,7 +53,7 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   when not deployed, `runDebug()` runs `flutter run` on the host,
   `install()` runs `dart install .` in the sources, `runningPids()` and
   `kill()` find and stop the running deployed release (`ShellProcesses` of
-  process_run 1.4.2, the descendants too).
+  process_run 1.4.2, the descendants too unless `killTree` is false).
 * In `tool/build_menu.dart`, `menuFlutterAppHostLauncherContent(launcher:,
   runArguments: {label: arguments})` adds build and run, build, run, one run
   item per `runArguments` entry, debug run and install; follow it with
