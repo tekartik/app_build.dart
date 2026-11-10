@@ -1,5 +1,5 @@
 name: tekartik_playstore_publish
-description: A sample command-line application.
+description: Upload Android app bundles to Google Play and release them on a track.
 version: 0.2.0
 publish_to: none
 

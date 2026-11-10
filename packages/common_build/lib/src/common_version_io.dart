@@ -31,9 +31,12 @@ final packageVersion = Version.parse(packageVersionText);
 ///
 /// Does nothing if [path]'s `pubspec.yaml` has no version (e.g. a
 /// workspace root), or — unless [force] is `true` (defaults to `false`) —
-/// if `lib/src/version.dart` doesn't already exist, or its content already
-/// matches the current version. If [verbose] is `true` (defaults to
-/// `false`), skip reasons are logged to stdout.
+/// if `lib/src/version.dart` doesn't already exist, is not a generated file
+/// (see [hasGeneratedVersionFile]: a hand-written file is kept), or its
+/// content already matches the current version. If [verbose] is `true`
+/// (defaults to `false`), skip reasons are logged to stdout.
+///
+/// Throws when [path] has no `pubspec.yaml`.
 Future<void> generateVersion({
   String path = '.',
   bool? force,
@@ -67,6 +70,16 @@ Future<void> generateVersion({
   if (!force) {
     var existingPosixContent = '${file.readAsLinesSync().join('\n')}\n';
 
+    // A file this function did not write (hand-written, other generator)
+    // is never replaced without force.
+    if (!_checkGeneratedContent(existingPosixContent)) {
+      if (verbose) {
+        stdout.writeln(
+          'Skipping generation of ${file.path} (not a generated file)',
+        );
+      }
+      return;
+    }
     //print('Existing content for ${file.path}:\n$existingPosixContent');
     if (_contentMatchesVersion(existingPosixContent, version)) {
       if (verbose) {

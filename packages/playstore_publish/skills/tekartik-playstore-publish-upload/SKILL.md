@@ -87,8 +87,8 @@ Dart VM only (`dart:io`, network).
 * Custom edits: `writeAppEdit((appEdit) async { ... },
   changesNotSentForReview:)` runs your callback on an
   `AndroidPublisherAppEdit`, then validates and commits it, or deletes it
-  and rethrows when the callback throws; `readOnlyAppEdit(...)` deletes it
-  on failure only and never commits. Inside, use
+  and rethrows when the callback throws; `readOnlyAppEdit(...)` always
+  deletes it afterwards (success or failure) and never commits. Inside, use
   `appEdit.uploadBundle(aabPath)`, `appEdit.publishTrack(trackName,
   versionCode:, releaseStatus:)`, `appEdit.listBundles()`,
   `appEdit.hasBundleVersionCode(n)`, `appEdit.getTrackVersionCode(trackName,
@@ -108,6 +108,8 @@ Dart VM only (`dart:io`, network).
   `e.message` and `e.jsonResponse`.
 * Progress is written to `stdout`/`stderr` by the package (`aab: N`,
   `uploading: ...`, `updating track: ...`); there is no quiet mode.
+* The client of `initAndroidPublisherClient` / `initPublishApiClient` cannot
+  be closed: a script may take a few seconds to exit after its last call.
 
 ### File based helpers (older API)
 
@@ -116,10 +118,11 @@ Dart VM only (`dart:io`, network).
   `packageName` are available. `manageBundle(localAab, serviceAccountPath:,
   uploadOptions:, publishOptions:)` reads the service account file itself
   (default `.local/service_account.json`), uploads when
-  `UploadOptions(upload: true)` (throws `'Version already uploaded as aab'`
-  when the version code exists), publishes to `PublishOptions(track:,
-  changesNotSentForReview:, releaseStatus:)` when a track is given, then
-  validates and commits. `uploadBundle(localAab)` uploads without
+  `UploadOptions(upload: true)` (skipped, printing `versionCode N already
+  exists`, when the version code is already there), publishes to
+  `PublishOptions(track:, changesNotSentForReview:, releaseStatus:)` when a
+  track is given, all in one edit, then validates and commits (nothing is
+  done without an upload or a track). `uploadBundle(localAab)` uploads without
   publishing; `publishBundle(localAab, track:)` publishes an existing upload
   (`publishTrackInternal` by default) and throws `'Version N not found'`
   when the bundle was never uploaded. They need `bundletool` on the PATH;

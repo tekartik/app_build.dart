@@ -74,8 +74,10 @@ Future<void> main() async {
 * Opt a package in once with `generateVersion(force: true)` (or a
   `tool/version_force.dart` script) and commit the file. From then on every
   `generateVersion()` call rewrites it when the pubspec version changed.
-  Packages without the file are skipped, so calling `generateVersion()`
-  unconditionally before builds and in CI is safe.
+  Packages without the file, or whose `lib/src/version.dart` was not written
+  by the generator (hand-written, another generator such as build_version),
+  are skipped, so calling `generateVersion()` unconditionally before builds
+  and in CI is safe.
 * Never edit the file by hand: it is overwritten, and `dart format` runs on it
   after each generation.
 * Read it from the package's own code with
@@ -86,18 +88,21 @@ Future<void> main() async {
 * `hasGeneratedVersionFile(path:)` is content based: the file exists, is under
   1000 characters and contains `const packageVersionText = ` and
   `final packageVersion = `. A hand-written file with those markers counts as
-  generated and gets replaced.
+  generated and gets replaced; any other existing file is kept (without
+  `force`).
 
 ### generateVersion
 
 * `generateVersion({String path = '.', bool? force, bool? verbose})` reads
   `pubspec.yaml` under `path` and returns silently when it has no `version:`
   (a workspace root). It throws when `pubspec.yaml` is missing.
-* Without `force` it skips when `lib/src/version.dart` does not exist, or when
-  it already contains the current version (no rewrite, no `dart format`).
+* Without `force` it skips when `lib/src/version.dart` does not exist, when it
+  is not a generated file (see `hasGeneratedVersionFile`), or when it already
+  contains the current version (no rewrite, no `dart format`).
   `verbose: true` prints the skip reason to stdout.
 * `force: true` creates `lib/src/` if needed and writes the file even when it
-  is missing or already up to date. Use it for the initial opt-in only.
+  is missing, hand-written or already up to date. Use it for the initial
+  opt-in only.
 * The `dart format` step runs through `package:process_run`, which puts the
   SDK running the script first on the shell `PATH`, so the formatter is the
   one of the current Dart or Flutter SDK and needs no extra setup.
