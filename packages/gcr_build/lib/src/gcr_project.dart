@@ -1,4 +1,5 @@
 import 'package:dev_build/shell.dart';
+import 'package:path/path.dart';
 import 'package:process_run/stdio.dart';
 import 'package:tekartik_common_build/version_io.dart';
 import 'package:tekartik_common_utils/common_utils_import.dart';
@@ -90,10 +91,20 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
   /// the image, configures Docker auth, creates the Artifact Registry
   /// repository if needed (in parallel with the build/tag steps), then
   /// pushes ([dockerPush]) and deploys ([deploy]) the image.
+  ///
+  /// The version file is the generated `lib/src/version.dart` of the dart
+  /// package at [path] (the one built into the image), refreshed from its
+  /// `pubspec.yaml` (`generateVersion` of `tekartik_common_build`: a
+  /// missing or hand-written file is left alone); nothing is generated when
+  /// [path] is not a dart package.
   Future<void> buildAndDeploy() async {
     var futures = [
       shellStdioLinesGrouper.runZoned(() async {
-        await generateVersion();
+        // The version of the package built into the image, the one at
+        // [path] (when it is a dart package).
+        if (File(join(path, 'pubspec.yaml')).existsSync()) {
+          await generateVersion(path: path);
+        }
 
         await build();
 
@@ -152,9 +163,11 @@ ${options.region}-docker.pkg.dev/${options.projectId}/${options.name}/${options.
   }
 
   /// Kills the project's running containers via `docker compose kill`, if
-  /// any are running.
+  /// any are running (`docker compose ps -q`, both run in [path]).
   Future<void> kill() async {
-    var processIds = await dockerComposeGetRunningProcessIds();
+    var processIds = await dockerComposeGetRunningProcessIds(
+      workingDirectory: path,
+    );
     if (processIds.isNotEmpty) {
       await _shell.run('''
     docker compose kill

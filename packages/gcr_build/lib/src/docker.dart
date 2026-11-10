@@ -18,9 +18,13 @@ Future<void> dockerKillAll() async {
   ''');
 }
 
-/// Get any running process ids
-Future<List<String>> dockerComposeGetRunningProcessIds() async {
-  var processIds = (await run(r'''
+/// The ids of the running containers of the docker compose project in
+/// [workingDirectory] (the current directory by default), via
+/// `docker compose ps -q`.
+Future<List<String>> dockerComposeGetRunningProcessIds({
+  String? workingDirectory,
+}) async {
+  var processIds = (await Shell(workingDirectory: workingDirectory).run(r'''
      docker compose ps -q
   ''')).outLines.map((e) => e.trim()).where((e) => e.isNotEmpty).toList();
   return processIds;

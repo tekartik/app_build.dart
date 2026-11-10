@@ -56,15 +56,15 @@ extension of shell wrappers. Dart VM only.
   folder holding `docker-compose.yaml` and the `Dockerfile`; every shell
   command runs there.
 * Pipeline: `buildAndDeploy()` runs, in parallel, `generateVersion` (the
-  `lib/src/version.dart` of the package in the current directory, from
-  `tekartik_common_build`, only when the file already exists) then `build()`
-  and `dockerTagImage()`, and `configureDockerAuth()` then
-  `createArtifactRepository()`; then `dockerPush()` and `deploy()`. Run the
-  script from the package root so the version file is the right one.
+  generated `lib/src/version.dart` of the dart package at `path`, the one
+  built into the image, from `tekartik_common_build`: a missing or
+  hand-written file is left alone, nothing when `path` is not a dart package)
+  then `build()` and `dockerTagImage()`, and `configureDockerAuth()` then
+  `createArtifactRepository()`; then `dockerPush()` and `deploy()`.
 * Steps, callable alone: `build()` (`docker compose build`),
   `buildAndRun()` (`kill()` then `docker compose up --build --pull never`,
   blocks while the service runs), `kill()` (`docker compose kill` when
-  `docker compose ps -q` lists something), `dockerTagImage()`,
+  `docker compose ps -q` lists something, both in `path`), `dockerTagImage()`,
   `configureDockerAuth()` (`gcloud auth configure-docker
   <region>-docker.pkg.dev`, once per region), `createArtifactRepository(force:)`
   (skips when `listArtifactRepositories()` already contains `name`, unless
