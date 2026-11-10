@@ -25,7 +25,8 @@ class SurgeWebAppDeployer implements WebAppDeployer {
   /// [SurgeWebAppDeployer.path] is set.
   @override
   Future<void> deploy({String? path}) async {
-    var deployPath = this.path ?? path;
+    // The argument first, this deployer's default path otherwise
+    var deployPath = path ?? this.path;
     if (deployPath == null) {
       throw StateError('Missing deploy path');
     }

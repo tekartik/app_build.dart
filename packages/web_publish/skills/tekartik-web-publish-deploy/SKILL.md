@@ -70,9 +70,12 @@ scripts and app builders.
     - icons/
   ```
 
-* Symlinks are never followed (`FsDeployOptions()..noSymLink = true`), and
-  files already present in the deploy folder that are not in `files:` are left
-  alone: clean the deploy folder yourself when a stale file must disappear.
+* Files are copied, never linked (`FsDeployOptions()..noSymLink = true`).
+  The deploy folder is **deleted first** (its whole content, no stale file
+  remains): never point `deployDir` at a folder holding the build or
+  anything else to keep (`deployDir: 'build'` with `buildDir: 'build/web'`
+  deletes the build). Without a `files:` list, everything but `exclude:` is
+  copied.
 * Default folder names are exposed as constants, use them instead of literals:
   `webAppDeployDirDefault` (`deploy/web`), `surgeWebAppDeployDirDefault`
   (`deploy/surge`), `firebaseWebAppDeployDirDefault` (`deploy/firebase`) and
@@ -90,12 +93,10 @@ scripts and app builders.
   in that directory and prints `Deployed to https://<domain>`. It needs the
   `surge` cli on the PATH (`npm install -g surge`) and an already logged in
   account (`surge login`), since the command is not interactive here.
-* Gotcha: `deploy({path})` uses the deployer's **own** `path` first and only
-  falls back to the argument when the constructor `path` was null (`this.path
-  ?? path`), despite what the doc comment suggests. Set it in one place only:
-  either construct one deployer per deploy folder, or leave the constructor
-  `path` null and always pass it to `deploy()`. If both are null it throws
-  `StateError('Missing deploy path')`.
+* `deploy({path})` deploys the argument when given, the constructor `path`
+  otherwise (it is only a default, `path ?? this.path`): an app builder
+  calling `deployer.deploy(path: deployDir)` always deploys its own folder.
+  If both are null it throws `StateError('Missing deploy path')`.
 * Deploy the folder you copied to, not the build folder: `surge` uploads
   everything in the directory it runs in.
 * `WebAppDeployOptions` is the (empty) base type of deploy options; implement
@@ -107,8 +108,9 @@ scripts and app builders.
   `tekartik-firebase-build-hosting`) which has its own build-to-deploy and
   `firebase deploy` support. `firebaseWebAppDeployDirDefault` here is just the
   conventional folder name.
-* The package has no test folder; keep custom deployers thin and test the code
-  that computes paths/options rather than the shell call.
+* Keep custom deployers thin. `test/surge_deploy_test.dart` shows how to
+  test one with a fake command line first in the `PATH`
+  (`shellEnvironment` of process_run), the real one never run.
 
 ## Examples
 
@@ -198,11 +200,15 @@ class RsyncWebAppDeployer implements WebAppDeployer {
 
   @override
   Future<void> deploy({String? path}) async {
-    var deployPath = this.path ?? path;
+    // The argument first, the default path otherwise
+    var deployPath = path ?? this.path;
     if (deployPath == null) {
       throw StateError('Missing deploy path');
     }
-    await Shell().run('rsync -az --delete $deployPath/ ${options.target}');
+    await Shell().run(
+      'rsync -az --delete ${shellArgument('$deployPath/')} '
+      '${shellArgument(options.target)}',
+    );
   }
 }
 
