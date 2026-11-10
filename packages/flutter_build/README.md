@@ -1,16 +1,90 @@
-# tekartik_flutter_build.dart
+# tekartik_flutter_build
 
-Firebase build and deploy helpers
+Build helpers for Flutter apps, from Dart `tool/` scripts and `dev_build`
+console menus:
 
-## Setup
+- a web app: `flutter build web` (`--wasm`, `--target`), the copy of
+  `build/web` to a deploy folder, a local server, `flutter run -d chrome`,
+  a deploy through a `WebAppDeployer`, the js and wasm size report;
+- a check that a client build (web, apk, aab, ipa) holds none of the
+  secrets of the server code;
+- a desktop app installed as a global command (`dart install`), built from
+  its sources on the first run.
+
+Dart VM only (Linux, macOS, Windows): it runs the `flutter` command. The app
+itself never imports it. The Firebase hosting variant is
+`tekartik_firebase_build` (same repository).
+
+## Getting started
+
+A git dependency (not on pub.dev), a dev dependency of the app (a regular
+one for the desktop launcher, which runs with the app dependencies):
 
 ```yaml
-dependencies:
+dev_dependencies:
   tekartik_flutter_build:
     git:
       url: https://github.com/tekartik/app_build.dart
       path: packages/flutter_build
 ```
+
+Build the web app of the current folder and copy it to `deploy/web`:
+
+```dart
+// tool/build_web.dart
+import 'package:tekartik_flutter_build/app_build.dart';
+
+Future<void> main() async {
+  var builder = FlutterWebAppBuilder(
+    options: FlutterWebAppOptions(
+      buildOptions: FlutterWebAppBuildOptions(wasm: true),
+    ),
+  );
+  // flutter build web --wasm, then build/web copied to deploy/web.
+  await builder.build();
+}
+```
+
+The entry point is `lib/main_web.dart` when the app has one, `lib/main.dart`
+otherwise (`FlutterWebAppBuildOptions.target` to choose).
+
+## What to use
+
+| Api | Does |
+| --- | --- |
+| `FlutterWebAppBuilder` | `buildOnly`, `build` (+ copy to `deployDir`), `serve`, `run`, `deploy`, `clean`, `reportJsSize` |
+| `menuFlutterWebAppContent(builders:)` (`app_build_menu.dart`) | the menu items of one or several web builders |
+| `buildFindSecrets`, `buildCheckNoSecrets` (`build_secrets.dart`) | searches a build folder, an apk, an aab or an ipa for `BuildSecret` values |
+| `flutterWebAppsBuildSize`, `flutterWebBuildSizeWriteReport` | builds several apps and writes a markdown size report |
+| `flutterAppLauncherMain`, `FlutterAppHostLauncher` (`app_launcher.dart`) | the desktop app as a global command, below |
+
+A web build failing when it holds a server secret
+(`FlutterWebAppBuildOptions.secrets`, checked after each `buildOnly`):
+
+```dart
+import 'package:tekartik_flutter_build/app_build.dart';
+
+// In practice the map comes from the server code holding the values.
+var serverSecrets = {'apiKey': 'my-server-only-api-key'};
+
+Future<void> main() async {
+  var builder = FlutterWebAppBuilder(
+    options: FlutterWebAppOptions(
+      buildOptions: FlutterWebAppBuildOptions(
+        secrets: BuildSecret.fromMap(serverSecrets),
+      ),
+    ),
+  );
+  // Throws a BuildSecretsFoundException before anything is copied.
+  await builder.build();
+  // An android build: await buildCheckNoSecrets(apkPath, secrets);
+}
+```
+
+A value is searched as UTF-8, as the escaped literal dart2js writes (a
+newline, a quote, a backslash, a non ASCII character), as Latin-1 and
+UTF-16LE (the strings of an AOT snapshot). A value decrypted at run time is
+not in the build as such: list what the code writes too.
 
 ## Desktop app as a global command
 
@@ -71,3 +145,18 @@ On macos the app is sandboxed (the flutter default) and cannot open a folder
 given on the command line: `macosSandbox: false` (both
 `flutterAppLauncherMain` and `FlutterAppHostLauncher`) disables the sandbox
 in the entitlements of the (git ignored) `macos/` project before each build.
+
+## Pitfalls
+
+- `deployDir` (`deploy/web` by default) is deleted then filled by each copy:
+  never point it at a folder holding anything else.
+- `run()` without a controller forwards stdin to `flutter run` and closes
+  it when it exits: make it the last step of a script.
+- A `BuildShellController` must be given its shell
+  (`BuildShellController(shell: Shell(workingDirectory: path))`), every
+  command runs through it.
+- The size report counts the dart output only (not `canvaskit/`); a build
+  made with `--source-maps` counts the `.part.js.map` files as parts.
+
+The agent skills of this package: `skills/tekartik-flutter-build-web` and
+`skills/tekartik-flutter-build-app-launcher`.

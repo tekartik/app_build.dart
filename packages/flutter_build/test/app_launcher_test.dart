@@ -80,6 +80,26 @@ packages:
       );
     });
 
+    test('git repository name of more than 50 characters', () {
+      // pub cuts the repository name of its checkout folder to 50
+      // characters (lib/src/source/git.dart `_repoName`).
+      var repoName = 'a_repository_name_that_is_longer_than_fifty_characters';
+      expect(repoName.length, greaterThan(50));
+      expect(
+        sourcePath('''
+packages:
+  tkassetexplorer:
+    description:
+      path: "."
+      ref: HEAD
+      resolved-ref: abc
+      url: "https://github.com/someone/$repoName.git"
+    source: git
+'''),
+        join('pub_cache', 'git', '${repoName.substring(0, 50)}-abc'),
+      );
+    });
+
     test('other', () {
       expect(sourcePath('packages:\n'), isNull);
       expect(sourcePath('packages:\n  path:\n    source: hosted\n'), isNull);

@@ -52,8 +52,11 @@ class BuildSecretMatch {
   /// archive.
   final String path;
 
-  /// How it was written: `utf8` (javascript, wasm, one byte strings of a
-  /// Dart AOT snapshot) or `utf16le` (two byte strings of a snapshot).
+  /// How it was written: `utf8` (javascript, wasm, ASCII strings of a Dart
+  /// AOT snapshot), `js` (an escaped dart2js string literal: `\n`, `\\`,
+  /// `\"`, `\xe9`, `\u20ac`...), `latin1` (one byte strings of a snapshot
+  /// holding characters up to U+00FF) or `utf16le` (two byte strings of a
+  /// snapshot).
   final String encoding;
 
   /// A match of [secret] in [path].
@@ -92,23 +95,20 @@ const buildSecretsArchiveExtensions = ['.apk', '.aab', '.ipa', '.zip', '.jar'];
 /// `lib/<abi>/libapp.so`, an ipa in `App.framework/App`), archives in an
 /// archive included.
 ///
-/// A value is searched as UTF-8 and as UTF-16LE bytes, which covers the
-/// javascript, the WebAssembly and the strings of a Dart AOT snapshot. A
-/// value computed at run time (decrypted) is not in the build as such: list
-/// what the code writes (the encrypted value and its password) too.
+/// A value is searched as UTF-8 bytes (javascript, WebAssembly, ASCII
+/// strings of a Dart AOT snapshot), as the escaped string literal dart2js
+/// writes when the value holds a quote, a backslash, a control or a non
+/// ASCII character, as Latin-1 bytes when all its characters are up to
+/// U+00FF (one byte strings of a snapshot) and as UTF-16LE bytes (two byte
+/// strings of a snapshot). A value computed at run time (decrypted) is not
+/// in the build as such: list what the code writes (the encrypted value and
+/// its password) too.
 Future<List<BuildSecretMatch>> buildFindSecrets(
   String path,
   Iterable<BuildSecret> secrets,
 ) async {
   var patterns = <({BuildSecret secret, String encoding, Uint8List bytes})>[
-    for (var secret in secrets) ...[
-      (
-        secret: secret,
-        encoding: 'utf8',
-        bytes: Uint8List.fromList(utf8.encode(secret.value)),
-      ),
-      (secret: secret, encoding: 'utf16le', bytes: _utf16le(secret.value)),
-    ],
+    for (var secret in secrets) ..._secretPatterns(secret),
   ];
   var matches = <BuildSecretMatch>[];
 
@@ -178,6 +178,76 @@ Future<void> buildCheckNoSecrets(
 
 bool _isArchivePath(String path) =>
     buildSecretsArchiveExtensions.contains(extension(path).toLowerCase());
+
+/// The byte patterns of [secret], one per way a build can hold it.
+List<({BuildSecret secret, String encoding, Uint8List bytes})> _secretPatterns(
+  BuildSecret secret,
+) {
+  var value = secret.value;
+  var patterns = <({BuildSecret secret, String encoding, Uint8List bytes})>[
+    (
+      secret: secret,
+      encoding: 'utf8',
+      bytes: Uint8List.fromList(utf8.encode(value)),
+    ),
+  ];
+  // dart2js: double quotes, single ones when the value holds a double quote
+  // but no single quote.
+  var jsLiterals = <String>{
+    for (var quote in const ['"', "'"]) _dart2jsEscape(value, quote),
+  }..remove(value);
+  for (var literal in jsLiterals) {
+    patterns.add((
+      secret: secret,
+      encoding: 'js',
+      bytes: Uint8List.fromList(utf8.encode(literal)),
+    ));
+  }
+  var units = value.codeUnits;
+  if (units.every((unit) => unit <= 0xff) && units.any((unit) => unit > 0x7f)) {
+    patterns.add((
+      secret: secret,
+      encoding: 'latin1',
+      bytes: Uint8List.fromList(units),
+    ));
+  }
+  patterns.add((secret: secret, encoding: 'utf16le', bytes: _utf16le(value)));
+  return patterns;
+}
+
+/// The content of the string literal dart2js writes for [value] in
+/// [quote] quotes: printable ASCII as is, `\\`, the escaped quote, `\b`,
+/// `\t`, `\n`, `\v`, `\f`, `\r`, the other characters up to U+00FF as
+/// `\xhh` and the others as `\uhhhh` (an astral character as its surrogate
+/// pair).
+String _dart2jsEscape(String value, String quote) {
+  var quoteUnit = quote.codeUnitAt(0);
+  var sb = StringBuffer();
+  for (var unit in value.codeUnits) {
+    var escaped = switch (unit) {
+      0x5c => r'\\',
+      0x08 => r'\b',
+      0x09 => r'\t',
+      0x0a => r'\n',
+      0x0b => r'\v',
+      0x0c => r'\f',
+      0x0d => r'\r',
+      _ => null,
+    };
+    if (escaped != null) {
+      sb.write(escaped);
+    } else if (unit == quoteUnit) {
+      sb.write('\\$quote');
+    } else if (unit >= 0x20 && unit < 0x7f) {
+      sb.writeCharCode(unit);
+    } else if (unit <= 0xff) {
+      sb.write('\\x${unit.toRadixString(16).padLeft(2, '0')}');
+    } else {
+      sb.write('\\u${unit.toRadixString(16).padLeft(4, '0')}');
+    }
+  }
+  return sb.toString();
+}
 
 Uint8List _utf16le(String value) {
   var bytes = Uint8List(value.length * 2);

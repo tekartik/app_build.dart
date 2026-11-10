@@ -375,11 +375,17 @@ String? pubspecLockSourcePath(
   return null;
 }
 
-/// The checkout folder prefix pub uses for a git [gitUrl].
+/// The checkout folder prefix pub uses for a git [gitUrl] (pub's
+/// `GitSource._repoName`: the sanitized repository name, cut to 50
+/// characters).
 String _gitRepoName(String gitUrl) {
   var name = url.basename(gitUrl);
   if (name.endsWith('.git')) {
     name = name.substring(0, name.length - '.git'.length);
   }
-  return name.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
+  name = name.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
+  if (name.length > 50) {
+    name = name.substring(0, 50);
+  }
+  return name;
 }

@@ -7,6 +7,7 @@ import 'dart:typed_data';
 
 import 'package:archive/archive.dart';
 import 'package:path/path.dart';
+import 'package:process_run/shell.dart' show runExecutableArguments;
 import 'package:tekartik_flutter_build/build_secrets.dart';
 import 'package:test/test.dart';
 
@@ -95,6 +96,96 @@ void main() {
       }),
     );
     expect(await buildFindSecrets(plain, secrets), isEmpty);
+  });
+
+  group('escaped and one byte strings', () {
+    // Values a plain utf8 search misses in a dart2js build, the escaped
+    // literal being what `dart compile js` writes (checked with dart 3.13).
+    var specialSecrets = BuildSecret.fromMap({
+      'pem': '-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkq\n-----END',
+      'quoted': 'pass"word\\with\\backslash',
+      'bothQuotes': 'both"quotes\'inside-secret',
+      'latin': 'motdepasse-éàü-secret',
+      'euro': 'price-in-euro-€-secret',
+      'emoji': 'emoji-😀-secret-value',
+      'controls': 'tab\there-nul\x00-del\x7f-secret',
+    });
+
+    test('dart2js string literals', () async {
+      file(
+        'web/main.dart.js',
+        utf8.encode(
+          [
+            r'a="-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkq\n-----END"',
+            r"""b='pass"word\\with\\backslash'""",
+            r'''c="both\"quotes'inside-secret"''',
+            r'd="motdepasse-\xe9\xe0\xfc-secret"',
+            r'e="price-in-euro-\u20ac-secret"',
+            r'f="emoji-\ud83d\ude00-secret-value"',
+            r'g="tab\there-nul\x00-del\x7f-secret"',
+          ].join(';'),
+        ),
+      );
+      var matches = await buildFindSecrets(
+        join(dir.path, 'web'),
+        specialSecrets,
+      );
+      expect(matches.map((match) => '$match'), [
+        'pem in main.dart.js (js)',
+        'quoted in main.dart.js (js)',
+        'bothQuotes in main.dart.js (js)',
+        'latin in main.dart.js (js)',
+        'euro in main.dart.js (js)',
+        'emoji in main.dart.js (js)',
+        'controls in main.dart.js (js)',
+      ]);
+    });
+
+    test('one byte string of an AOT snapshot', () async {
+      // A Dart AOT snapshot keeps a string whose characters are all
+      // <= U+00FF as one byte (Latin-1) characters.
+      var apk = file(
+        'app-release.apk',
+        _zip({
+          'lib/arm64-v8a/libapp.so': [
+            0,
+            ...latin1.encode('motdepasse-éàü-secret'),
+            0,
+          ],
+        }),
+      );
+      expect((await buildFindSecrets(apk, specialSecrets)).map((m) => '$m'), [
+        'latin in app-release.apk!lib/arm64-v8a/libapp.so (latin1)',
+      ]);
+    });
+
+    test('dart compile js', () async {
+      var source = file(
+        'src/main.dart',
+        utf8.encode('''
+void main() {
+${[for (var secret in specialSecrets) '  print(${jsonEncode(secret.value)});'].join('\n')}
+}
+'''),
+      );
+      var out = join(dir.path, 'web', 'main.dart.js');
+      await runExecutableArguments('dart', [
+        'compile',
+        'js',
+        '-O2',
+        '-o',
+        out,
+        source,
+      ], verbose: false);
+      var matches = await buildFindSecrets(
+        join(dir.path, 'web'),
+        specialSecrets,
+      );
+      expect(
+        matches.map((match) => match.secret.name).toSet(),
+        specialSecrets.map((secret) => secret.name).toSet(),
+      );
+    }, timeout: const Timeout(Duration(minutes: 2)));
   });
 
   test('a secret is long and its value is never shown', () {

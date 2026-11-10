@@ -75,10 +75,13 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   makes every `buildOnly()` fail with a `BuildSecretsFoundException` when
   `build/web` contains one of the values, before any copy or deploy
   (`builder.checkNoSecrets()` checks the last build; `buildFindSecrets` /
-  `buildCheckNoSecrets` also search an apk, an aab or an ipa). Build the
-  list from the code that holds the values (`BuildSecret.fromMap`), list
-  what the code writes (encrypted literals and their password), not only
-  the decrypted values. `renderer`
+  `buildCheckNoSecrets` also search an apk, an aab or an ipa). A value is
+  searched as UTF-8, as the escaped string literal dart2js writes (a value
+  holding a newline, a quote, a backslash or a non ASCII character: `\n`,
+  `\"`, `\\`, `\xe9`...), as Latin-1 and as UTF-16LE (the one and two
+  byte strings of an AOT snapshot). Build the list from the code that holds
+  the values (`BuildSecret.fromMap`), list what the code writes (encrypted
+  literals and their password), not only the decrypted values. `renderer`
   (`FlutterWebRenderer.canvasKit`; `html` is deprecated) is accepted for
   compatibility but no longer passed to flutter, which dropped
   `--web-renderer`. `copyWith(renderer:, wasm:, target:)` derives a variant
@@ -151,7 +154,8 @@ firebase hosting variant lives in `tekartik_firebase_build`.
   `wasmSize`, `wasmGzipSize` (loader included), `jsPartCount`; flags
   `isBuilt`, `hasWasm`. `name` defaults to the app folder name.
 * Only the dart output is counted: the engine (`canvaskit/`, `skwasm`) is
-  the same for every app. A `--wasm` build still has `main.dart.js`, the
+  the same for every app. A build made with `--source-maps` (not the
+  builder's) has `main.dart.js_<n>.part.js.map` files, counted as parts. A `--wasm` build still has `main.dart.js`, the
   fallback of browsers without wasm GC. `flutter build web` clears
   `build/web`, so a later non-wasm build leaves no stale wasm.
 * `flutterWebAppsBuildSize(paths, {build: true, buildOptions})` builds each
