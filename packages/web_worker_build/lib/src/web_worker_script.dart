@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:process_run/shell.dart' show Shell;
 
 import 'project_packages.dart';
 
@@ -161,11 +162,14 @@ class WebWorkerScript {
         compiled.path,
         entryFile.path,
       ];
-      var result = await Process.run(
-        _dartExecutable,
-        arguments,
+      var result = await Shell(
         workingDirectory: projectPath,
-      );
+        stdin: const Stream<List<int>>.empty(),
+        stdoutEncoding: const Utf8Codec(allowMalformed: true),
+        stderrEncoding: const Utf8Codec(allowMalformed: true),
+        verbose: false,
+        throwOnError: false,
+      ).runExecutableArguments(_dartExecutable, arguments);
       if (result.exitCode != 0) {
         throw ProcessException(
           _dartExecutable,

@@ -177,6 +177,7 @@ packages:
         // another executable (sleep): only found as its descendant.
         var exe = File(launcher.deployedExePath);
         await exe.parent.create(recursive: true);
+        // The fixture program spawns a raw child on purpose (Process.start).
         var source = File(join(dir.path, 'sleeper.dart'));
         await source.writeAsString(
           "import 'dart:io';\n\n"
