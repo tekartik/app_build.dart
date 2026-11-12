@@ -1,24 +1,64 @@
-# tekartik_firebase_build.dart
+# tekartik_firebase_build
 
-Firebase build helper
+Build a Flutter web app and deploy it to Firebase Hosting (or serve it with
+the hosting emulator), deploy the firestore rules of an app, generate its
+firebase options with `flutterfire`. Dart VM only (build scripts, `tool/`
+menus): it runs `flutter` and the `firebase` cli (`flutterfire` for the
+options), which must be on the `PATH`, with a `firebase login` that can deploy
+to the project.
 
-## Setup
+## Getting started
+
+Not on pub.dev, a git dev dependency of the app (or of its support package):
 
 ```yaml
-dependencies:
+dev_dependencies:
   tekartik_firebase_build:
     git:
       url: https://github.com/tekartik/app_build.dart
       path: packages/firebase_build
-    version: '>=0.1.0'
+    version: '>=0.2.0'
 ```
 
-## Usage
+The hosting folder of the app, `deploy/firebase/hosting`, holds a
+`firebase.json` with a hosting target (`"target": "dev"`, `"public":
+"public"`); the build is copied to its `public/` folder (git-ignore it).
+Then `tool/deploy_web.dart`:
 
-Building and deploying a flutter web app to firebase hosting is
-`app_build.dart` (`FlutterFirebaseWebAppBuilder`) and `firebase_deploy.dart`;
-driving the `firebase` cli on a firebase folder is `firebase_project.dart`
-(`FirebaseProjectBuilder`, from `tekartik_firebase_tools_common`).
+```dart
+import 'package:tekartik_firebase_build/app_build.dart';
+import 'package:tekartik_firebase_build/firebase_deploy.dart';
+
+Future<void> main() async {
+  var builder = FlutterFirebaseWebAppBuilder(
+    options: FlutterFirebaseWebAppOptions(
+      deployOptions: FirebaseDeployOptions(
+        projectId: 'my-project-dev',
+        hostingId: 'my-project-dev',
+        target: 'dev',
+      ),
+    ),
+  );
+  // flutter build web, copy to deploy/firebase/hosting/public, deploy.
+  await builder.buildAndDeploy();
+}
+```
+
+`builder.buildAndServe()` serves the same build with the hosting emulator,
+`builder.run()` runs the app in Chrome from its source.
+
+## Libraries
+
+- `app_build.dart`: `FlutterFirebaseWebAppBuilder` and its options (hosting
+  folder `deployDir`, `publicDir`, build options, `webPort`), plus the function
+  style `flutterWebAppBuildAndDeploy` / `flutterWebAppBuildAndServe`.
+- `firebase_deploy.dart`: `FirebaseDeployOptions` (project, hosting site,
+  target), `firebaseWebAppBuildToDeploy`, `firebaseWebAppDeploy`,
+  `firebaseWebAppServe`, `FirebaseWebAppActionController` (cancel).
+- `firebase_project.dart`, `firebase_project_menu.dart`: a firebase folder
+  driven by the `firebase` cli (`FirebaseProjectBuilder`, from
+  `tekartik_firebase_tools_common`) and its menu items.
+- `flutterfire_configure.dart`: `FirebaseFlutterProjectBuilder`.
 
 The firestore rules and indexes of an app live in `deploy/firebase/firestore`
 (`FirebaseProjectBuilderExt.defaultFirestoreDir`), next to the hosting folder:
@@ -47,3 +87,15 @@ await FirebaseFlutterProjectBuilder(
   ),
 ).configure();
 ```
+
+## Pitfalls
+
+- `deployDir` is always the hosting folder (the one holding `firebase.json`),
+  never its `public` folder: the build goes to `<deployDir>/<publicDir>`.
+- The first deploy of a target runs `firebase target:apply` (from the
+  `hostingId`), a `FirebaseWebAppActionController` cannot cancel that step.
+- `deploy()` and `serve()` copy the last build: call `build()` (or
+  `buildAndDeploy()`) first, a missing `build/web` is a `StateError`.
+
+More: the package skills in `skills/` (hosting, firebase project folder,
+flutterfire).

@@ -113,8 +113,9 @@ installed and logged in. Dart VM only.
 * Cancelling: `FirebaseWebAppActionController()` passed as `controller:` to
   `build`, `deploy`, `serve`, `buildAndDeploy`, `buildAndServe`, `run`;
   `controller.cancel()` kills the running `firebase` command or `flutter
-  run` (the flutter build itself is not covered). One controller can serve
-  several calls.
+  run` (the flutter build itself is not covered, nor the `firebase
+  target:apply` run before the first deploy of a target). One controller can
+  serve several calls.
 * Function style, same behaviour without a builder object:
   `flutterWebAppBuild(dir)` (plain `flutter build web`),
   `firebaseWebAppBuildToDeploy(dir, deployDir:, publicDir:, folder:)`
@@ -123,7 +124,10 @@ installed and logged in. Dart VM only.
   deployDir:, controller:)`, `firebaseWebAppServe(...)`,
   `flutterWebAppBuildAndDeploy(dir, firebaseDeployOptions:, deployDir:)`,
   `flutterWebAppBuildAndServe(...)`. `firebaseWepAppBuildToDeploy` (typo)
-  is deprecated.
+  is deprecated. In all of them `deployDir` is the hosting folder (the one
+  holding `firebase.json`, `deploy/firebase/hosting` by default), the build
+  lands in `<deployDir>/public`: passing `firebaseDefaultDeployDir` (the
+  `public` folder itself) copies to `public/public`.
 * Menus: `tekartik_firebase_build_menu_flutter` provides
   `menuFirebaseAppContent(builders:)` for these builders; this package has
   no hosting menu itself (its `firebase_project_menu.dart` is about the

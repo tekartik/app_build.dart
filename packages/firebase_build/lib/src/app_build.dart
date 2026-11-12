@@ -34,9 +34,10 @@ Future<void> _flutterWebAppBuildAndRun(
 /// Builds the Flutter web app in [directory] and deploys it to Firebase
 /// Hosting, using [firebaseDeployOptions] for the deploy target/project.
 ///
-/// [deployDir] overrides where the built output is copied before deploying
-/// (assumes a static web site in a `'public'` subfolder by default; see
-/// `firebaseDefaultDeployDir`).
+/// [deployDir] is the hosting folder, the one holding `firebase.json`
+/// (`deploy/firebase/hosting` by default, relative to [directory] unless
+/// absolute): the build is copied to its `public` subfolder, then deployed
+/// from there. Not the `public` folder itself (`firebaseDefaultDeployDir`).
 Future<void> flutterWebAppBuildAndDeploy(
   String directory, {
   required FirebaseDeployOptions firebaseDeployOptions,
@@ -53,9 +54,7 @@ Future<void> flutterWebAppBuildAndDeploy(
 /// Builds the Flutter web app in [directory] and serves it locally via the
 /// Firebase emulator, using [firebaseDeployOptions] for the target/project.
 ///
-/// [deployDir] overrides where the built output is copied before serving
-/// (assumes a static web site in a `'public'` subfolder by default; see
-/// `firebaseDefaultDeployDir`).
+/// [deployDir] is the hosting folder, as for [flutterWebAppBuildAndDeploy].
 Future<void> flutterWebAppBuildAndServe(
   String directory, {
   required FirebaseDeployOptions firebaseDeployOptions,
