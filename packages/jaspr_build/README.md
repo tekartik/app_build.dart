@@ -41,8 +41,9 @@ dev_dependencies:
       path: packages/jaspr_build
 ```
 
-The `firebase` cli must be installed and logged in, `cwebp` (package webp)
-for `webpConvert`.
+Dart VM only (`tool/` scripts, a dev menu, tests): it uses `dart:io` and
+shells out. The `firebase` cli must be installed and logged in, `cwebp`
+(package webp) for `webpConvert`, Chrome for the screenshots.
 
 ## Usage
 
@@ -113,6 +114,15 @@ the 404 of each language included) on a desktop and a phone, full page:
 `captureSiteScreenshots` takes chosen pages and views, a script to run in
 each page first and other folders to serve. Chrome is `CHROME_EXECUTABLE`,
 else Chrome or Chromium on the path.
+
+`captureFlutterWebScreenshots` does the same for a Flutter web build (served
+as a single page app, Chrome started with `headlessChromeFlutterArguments`,
+each page in its language).
+
+The local server (`StaticSiteServer`) listens on 127.0.0.1 and serves only
+the files of its folders: `..`, an encoded `/` (`..%2F`) or an invalid
+encoding answers 404. A capture whose Chrome went away fails with a
+`CdpException` instead of waiting.
 
 ## Notes
 

@@ -41,8 +41,11 @@ declarations for firebase hosting builders. Dart VM only (`dart run`).
   main(List<String> arguments)` calling `mainMenuConsole(arguments, () {
   ... })`; declarations inside are synchronous (`menu`, `item`, `enter`,
   `write`), actions are async. `dart run tool/build_menu.dart` is
-  interactive; `dart run tool/build_menu.dart <item number or cmd>` runs
-  one item and exits (CI, shell aliases).
+  interactive; the arguments are menu input lines run first, in order
+  (item numbers or `cmd:` shortcuts, `.` goes back and exits at the top),
+  then the menu waits for input: `dart run tool/build_menu.dart 0 .` runs
+  item 0 and exits; end with one `.` per sub menu entered (CI, shell
+  aliases).
 * Builders: one `FlutterFirebaseWebAppBuilder(options:
   FlutterFirebaseWebAppOptions(path:, deployOptions:
   FirebaseDeployOptions(projectId:, hostingId:, target:), buildOptions:

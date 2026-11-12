@@ -1,48 +1,40 @@
 // ignore_for_file: depend_on_referenced_packages
 import 'package:path/path.dart';
-import 'package:process_run/shell.dart';
-import 'package:tekartik_firebase_build_menu_flutter/app_build_menu.dart'
-    as ffbm;
 import 'package:tekartik_firebase_build_menu_flutter/app_build_menu.dart';
 
 export 'package:tekartik_flutter_build/app_build.dart';
 
-var userPlusAppPackageTop = join(
-  '..',
-  '..',
-  'packages_flutter',
-  'festenaoprv_user_plus_app',
-);
+/// The Flutter app this menu builds, next to the tool package.
+var myAppPackageTop = join('..', 'my_app');
 
-var userPlusAppDevDeployOptions = FirebaseDeployOptions(
-  projectId: 'test-project-id',
-  hostingId: 'test-project',
+var myAppDevDeployOptions = FirebaseDeployOptions(
+  projectId: 'my-project-dev',
+  hostingId: 'my-app-dev',
   target: 'dev',
 );
 
-var userPlusAppBuildOptions = FlutterWebAppBuildOptions(
+var myAppBuildOptions = FlutterWebAppBuildOptions(
   wasm: true,
   target: join('lib', 'main.dart'),
 );
 
-var userPlusAppShell = Shell().cd(userPlusAppPackageTop);
-
+/// `dart run example/example_build_menu.dart` (from a tool package next to
+/// `my_app`).
 Future main(List<String> arguments) async {
-  await exampleMenu(arguments, path: userPlusAppPackageTop);
+  await exampleMenu(arguments, path: myAppPackageTop);
 }
 
+/// The build menu of the app at [path]: a `target dev` sub menu (build,
+/// serve, deploy...) and an `all` sub menu.
 Future exampleMenu(List<String> arguments, {String path = '.'}) async {
-  final userPlusAppFirebaseWebAppDevOptions = FlutterFirebaseWebAppOptions(
-    buildOptions: userPlusAppBuildOptions,
-    path: path,
-    deployOptions: userPlusAppDevDeployOptions,
-  );
-  // FlutterWebAppBuildOptions(renderer: FlutterWebRenderer.canvasKit);
-  var userPlusAppDevBuilder = FlutterFirebaseWebAppBuilder(
-    options: userPlusAppFirebaseWebAppDevOptions,
+  var myAppDevBuilder = FlutterFirebaseWebAppBuilder(
+    options: FlutterFirebaseWebAppOptions(
+      buildOptions: myAppBuildOptions,
+      path: path,
+      deployOptions: myAppDevDeployOptions,
+    ),
   );
   mainMenuConsole(arguments, () {
-    ffbm.menuFirebaseAppContent(builders: [userPlusAppDevBuilder]);
-    menu('configure', () {});
+    menuFirebaseAppContent(builders: [myAppDevBuilder]);
   });
 }

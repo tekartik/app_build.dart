@@ -72,6 +72,8 @@ const screenshotDesktopDark = ScreenshotView(
 /// A static file server on a free local port: [root] at `/`, and other
 /// folders at their url prefix ([mounts], `/prefix/` to folder). A folder
 /// url serves its `index.html`, a missing file the root's `404.html`.
+/// Listens on 127.0.0.1; only the files within the folders are served
+/// (see `jasprBuildFileOfPath`: no `..`, no encoded `/` in a segment).
 ///
 /// With [spa] (a single page app, a Flutter web build with the path url
 /// strategy), a missing url without an extension serves the root's
@@ -179,11 +181,16 @@ class CdpSession {
   var _lastId = 0;
   final _pending = <int, Completer<Map<String, Object?>>>{};
   final _events = StreamController<CdpEvent>.broadcast();
+  var _closed = false;
 
   CdpSession._(this._socket) {
     _socket.listen(
       (data) => _onMessage(jsonDecode(data as String) as Map<String, Object?>),
+      // A broken connection ends as a closed one (onDone follows).
+      onError: (Object _) {},
       onDone: () {
+        // A call made from now on fails at once (it would never be answered).
+        _closed = true;
         for (var completer in _pending.values) {
           completer.completeError(CdpException('connection closed'));
         }
@@ -220,11 +227,15 @@ class CdpSession {
     }
   }
 
-  /// Calls [method] with [params], returns its result.
+  /// Calls [method] with [params], returns its result; throws a
+  /// [CdpException] once the connection is closed.
   Future<Map<String, Object?>> call(
     String method, [
     Map<String, Object?> params = const {},
   ]) {
+    if (_closed) {
+      return Future.error(CdpException('connection closed ($method)'));
+    }
     var id = ++_lastId;
     var completer = _pending[id] = Completer<Map<String, Object?>>();
     _socket.add(jsonEncode({'id': id, 'method': method, 'params': params}));

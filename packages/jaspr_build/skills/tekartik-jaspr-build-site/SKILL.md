@@ -14,7 +14,9 @@ description: >-
   built site with headless Chrome in jaspr_screenshot.dart
   (jasprSiteScreenshots, captureSiteScreenshots, jasprBuildScreenshotPages,
   SiteScreenshotPage, ScreenshotView, StaticSiteServer, HeadlessChrome,
-  PageScreenshotter, CdpSession).
+  PageScreenshotter, CdpSession), and the screens of a Flutter web app
+  (captureFlutterWebScreenshots, FlutterWebScreenshotter,
+  headlessChromeFlutterArguments).
 ---
 
 # tekartik_jaspr_build site
@@ -241,9 +243,31 @@ Future<void> main() async {
 ```
 
 Chrome is `CHROME_EXECUTABLE` (environment or the process_run user env),
-else `google-chrome`/`chromium` on the path. A Flutter web page needs
-`HeadlessChrome.start(arguments: ['--enable-unsafe-swiftshader'])` and a
-longer `settle` (its first frame comes well after the load event).
+else `google-chrome`/`chromium` on the path.
+
+### Screens of a Flutter web app
+
+A Flutter web build is served as a single page app (unknown paths serve
+`index.html`), Chrome starts with `headlessChromeFlutterArguments`
+(swiftshader, else CanvasKit stays white) and each capture waits for the
+`flutter-view` and the tekartik_web_splash splash to go
+(`flutterWebSplashHidden`), then `settle`. Each page is shown in its `lang`
+(`navigator.languages`):
+
+```dart
+import 'package:tekartik_jaspr_build/jaspr_screenshot.dart';
+
+Future<void> main() async {
+  await captureFlutterWebScreenshots(
+    root: 'build/web',
+    pages: [
+      const SiteScreenshotPage('01_home_en', '/', lang: 'en'),
+      const SiteScreenshotPage('01_home_fr', '/', lang: 'fr'),
+    ],
+    out: '.local/app_shots',
+  );
+}
+```
 
 ## Common mistakes
 
@@ -256,6 +280,14 @@ longer `settle` (its first frame comes well after the load event).
   flavor being deployed first.
 * A page served in English to French browsers: it has no `hreflang="fr"`
   alternate, so no i18n copy was made.
+* `StaticSiteServer` (and `jasprBuildFileOfPath`, which the check and the
+  i18n copies use) serves only the files of its folder: a `..` segment, an
+  encoded `/` or `\` in a segment (`..%2F`) or an invalid encoding is a 404
+  (fixed 2026-11-12: `/..%2Fsecret.txt` read the file next to the folder).
+  It listens on 127.0.0.1 only, for the time of the capture.
+* Chrome crashed or the tab closed: every `CdpSession.call` (and `evaluate`,
+  a capture) then throws a `CdpException('connection closed')`; before
+  2026-11-12 a call after the close never completed and a capture hung.
 
 ## More
 

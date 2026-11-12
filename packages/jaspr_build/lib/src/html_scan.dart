@@ -103,15 +103,31 @@ String jasprBuildPathOfFile(String relativeFile) {
 
 /// The file of the build folder [buildPath] that Hosting serves for the url
 /// [path] (`/faq/` or `/faq` give `faq/index.html`), null when there is none.
+///
+/// [path] is percent encoded (`Uri.path`). Only a file within [buildPath] is
+/// returned: a `..` segment, a segment that decodes to a `/` or a `\`
+/// (`..%2F`) and an invalid encoding give null.
 String? jasprBuildFileOfPath(String buildPath, String path) {
-  var segments = [
-    for (var segment in path.split('/'))
-      if (segment.isNotEmpty) Uri.decodeComponent(segment),
-  ];
-  if (segments.contains('..')) {
-    return null;
+  var segments = <String>[];
+  for (var segment in path.split('/')) {
+    if (segment.isEmpty) {
+      continue;
+    }
+    String decoded;
+    try {
+      decoded = Uri.decodeComponent(segment);
+    } on ArgumentError {
+      return null;
+    }
+    if (decoded == '..' || decoded.contains('/') || decoded.contains(r'\')) {
+      return null;
+    }
+    segments.add(decoded);
   }
   var base = p.joinAll([buildPath, ...segments]);
+  if (!p.equals(buildPath, base) && !p.isWithin(buildPath, base)) {
+    return null;
+  }
   if (!path.endsWith('/') && File(base).existsSync()) {
     return base;
   }
