@@ -9,7 +9,9 @@ console menus:
 - a check that a client build (web, apk, aab, ipa) holds none of the
   secrets of the server code;
 - a desktop app installed as a global command (`dart install`), built from
-  its sources on the first run.
+  its sources on the first run;
+- the tests of an app on a device of a target (android, ios, the host
+  desktop), the device found or launched for the run.
 
 Dart VM only (Linux, macOS, Windows): it runs the `flutter` command. The app
 itself never imports it. The Firebase hosting variant is
@@ -57,6 +59,7 @@ otherwise (`FlutterWebAppBuildOptions.target` to choose).
 | `buildFindSecrets`, `buildCheckNoSecrets` (`build_secrets.dart`) | searches a build folder, an apk, an aab or an ipa for `BuildSecret` values |
 | `flutterWebAppsBuildSize`, `flutterWebBuildSizeWriteReport` | builds several apps and writes a markdown size report |
 | `flutterAppLauncherMain`, `FlutterAppHostLauncher` (`app_launcher.dart`) | the desktop app as a global command, below |
+| `withFlutterTargetDevice`, `runFlutterDeviceTest` (`device_test.dart`) | the tests of an app on a device found or launched, below |
 
 A web build failing when it holds a server secret
 (`FlutterWebAppBuildOptions.secrets`, checked after each `buildOnly`):
@@ -146,6 +149,46 @@ given on the command line: `macosSandbox: false` (both
 `flutterAppLauncherMain` and `FlutterAppHostLauncher`) disables the sandbox
 in the entitlements of the (git ignored) `macos/` project before each build.
 
+## Tests on a device
+
+`package:tekartik_flutter_build/device_test.dart` runs `flutter test` on a
+device of a `FlutterDeviceTarget`:
+
+- android: the online device or emulator, else an AVD launched then stopped
+  (`withAndroidDevice` of tekartik_android_utils);
+- ios (macOS hosts): the booted simulator, else the first iPhone of the
+  latest runtime booted then shut down, shown in DeviceHub on Xcode 27+
+  (`withIosSimulator` of tekartik_apple_build);
+- linux, macos, windows: the host.
+
+```dart
+import 'package:tekartik_flutter_build/device_test.dart';
+
+Future<void> main() async {
+  var path = '.';
+  for (var target in FlutterDeviceTarget.hostTargets) {
+    await flutterCreatePlatformsIfMissing(path, [target.platform]);
+    var result = await withFlutterTargetDevice(
+      target,
+      (device) => runFlutterDeviceTest(path, deviceId: device.id),
+      options: const FlutterTargetDeviceOptions(noWindow: true),
+    );
+    print('${target.name}: ${result.summary}');
+  }
+}
+```
+
+One device serves several runs when they are in the same action. When no
+device can be chosen (several AVDs and nothing online, an unknown
+simulator) a `FlutterTargetDeviceException` holds the `candidates`; a UI
+lists them (`listFlutterTargetDeviceCandidates`) and runs again with
+`candidate.select(options)`.
+
+`flutterCreatePlatformsIfMissing` keeps the `.metadata` and removes the
+counter sample test `flutter create` adds to a project without tests. The
+`flutter test -r json` output is parsed as it comes (`TestJsonSummary`:
+passed, skipped, failed, the failures, `done` false on a build error).
+
 ## Pitfalls
 
 - `deployDir` (`deploy/web` by default) is deleted then filled by each copy:
@@ -158,5 +201,6 @@ in the entitlements of the (git ignored) `macos/` project before each build.
 - The size report counts the dart output only (not `canvaskit/`); a build
   made with `--source-maps` counts the `.part.js.map` files as parts.
 
-The agent skills of this package: `skills/tekartik-flutter-build-web` and
-`skills/tekartik-flutter-build-app-launcher`.
+The agent skills of this package: `skills/tekartik-flutter-build-web`,
+`skills/tekartik-flutter-build-app-launcher` and
+`skills/tekartik-flutter-build-device-test`.
