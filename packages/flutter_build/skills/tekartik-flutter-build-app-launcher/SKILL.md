@@ -33,8 +33,9 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   `<app> -- --kill` (`-k`) first kills the running instances of the
   deployed release and their descendants (`ShellProcesses` of process_run:
   sigterm, sigkill after 5s; a single instance app would show the old one),
-  `<app> -- --upgrade` (`-u`) kills them too, then rebuilds the release
-  before running it (a restart on new sources), `<app> -- --help` shows the
+  `<app> -- --upgrade` (`-u`, or `--pub-upgrade`) kills them too, runs
+  `flutter pub upgrade` in the app folder, then rebuilds the release
+  before running it (a restart on new sources and dependencies), `<app> -- --help` shows the
   usage. `killTree: false` (`flutterAppLauncherMain`,
   `FlutterAppHostLauncher`, 0.2.5) kills the app only, as if it was closed:
   for an app whose processes must outlive it (sessions held by `dtach`).

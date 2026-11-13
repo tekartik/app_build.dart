@@ -112,10 +112,19 @@ class FlutterAppHostLauncher {
     }
   }
 
+  /// Runs `flutter pub upgrade` in [path].
+  Future<void> pubUpgrade() async {
+    await Shell(workingDirectory: path).run('flutter pub upgrade');
+  }
+
   /// Builds the release and copies it to [deployPath].
   ///
   /// The platform project (`linux/`, git ignored) is created when missing.
-  Future<void> build() async {
+  /// When [pubUpgrade] is true, runs `flutter pub upgrade` in [path] first.
+  Future<void> build({bool pubUpgrade = false}) async {
+    if (pubUpgrade) {
+      await this.pubUpgrade();
+    }
     await createHostProject();
     await flavorBuilder.buildHost();
   }
@@ -135,14 +144,15 @@ class FlutterAppHostLauncher {
   }
 
   /// Runs the deployed release with [arguments] (see [run]), building it
-  /// first when not deployed yet or when [rebuild] is true.
+  /// first when not deployed yet or when [rebuild] or [pubUpgrade] is true.
   Future<int> buildIfNeededAndRun({
     List<String> arguments = const [],
     bool rebuild = false,
+    bool pubUpgrade = false,
   }) async {
-    if (rebuild || !isDeployed) {
+    if (rebuild || pubUpgrade || !isDeployed) {
       stdout.writeln('Building $packageName in $path');
-      await build();
+      await build(pubUpgrade: pubUpgrade);
     }
     return await run(arguments);
   }
@@ -196,8 +206,15 @@ Future<void> flutterAppLauncherMain(
       abbr: 'u',
       negatable: false,
       help:
-          'Kill the running app, rebuild it (release), then run it '
-          '(implies --kill).',
+          'Kill the running app, run flutter pub upgrade, rebuild it '
+          '(release), then run it (implies --kill).',
+    )
+    ..addFlag(
+      'pub-upgrade',
+      negatable: false,
+      help:
+          'Run flutter pub upgrade in the app folder before building '
+          '(implies --upgrade).',
     )
     ..addFlag(
       'kill',
@@ -259,7 +276,8 @@ Future<void> flutterAppLauncherMain(
     macosSandbox: macosSandbox,
     killTree: killTree,
   );
-  var upgrade = options.flag('upgrade');
+  var pubUpgrade = options.flag('pub-upgrade');
+  var upgrade = options.flag('upgrade') || pubUpgrade;
   // An upgrade replaces the running release: a single instance app would
   // show the old one, Windows cannot replace its files.
   if (options.flag('kill') || upgrade) {
@@ -274,6 +292,7 @@ Future<void> flutterAppLauncherMain(
     exitCode = await launcher.buildIfNeededAndRun(
       arguments: appArguments,
       rebuild: upgrade,
+      pubUpgrade: upgrade,
     );
   } on ShellException catch (e) {
     stderr.writeln('Build failed: ${e.message}');

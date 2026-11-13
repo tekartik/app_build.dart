@@ -17,6 +17,10 @@ void menuFlutterAppHostLauncherContent({
     await launcher.build();
     await launcher.run();
   });
+  item('pub upgrade, build and run $platform', () async {
+    await launcher.build(pubUpgrade: true);
+    await launcher.run();
+  });
   item('build $platform', () async {
     await launcher.build();
   });
