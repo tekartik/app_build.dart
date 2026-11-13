@@ -57,9 +57,9 @@ Future<void> main() async {
 
 ### The site package
 
-* Keep the jaspr site a standalone package (not a workspace member) when the
-  workspace has analyzer 13 packages (firebase functions): `jaspr_builder`
-  and `jaspr_cli` 0.23 need analyzer 12. `tekartik_jaspr_build` itself can be
+* Keep the jaspr site a standalone package (not a workspace member): its
+  `jaspr_builder` and `jaspr_cli` pin the analyzer (0.23: analyzer 12, Dart
+  3.13 at most; 0.24: analyzer 13+). `tekartik_jaspr_build` itself can be
   a dev dependency of the site or a dependency of a support package.
 * The site must read `<definePrefix>_SITE_URL` and `<definePrefix>_SITE_NOINDEX`
   (`String.fromEnvironment`, `bool.fromEnvironment`), and
@@ -271,9 +271,9 @@ Future<void> main() async {
 
 ## Common mistakes
 
-* `Address already in use ... port = 5567` during `jaspr build`: another
-  jaspr build is running on the machine (fixed proxy port). Run them one
-  after the other.
+* `Address already in use ... port = 5567` during `jaspr build`: the site is
+  still on jaspr 0.23 (fixed proxy port) and another build is running. Move
+  it to 0.24 (free port), or run the builds one after the other.
 * Every subpage reported with a broken relative script: the page lost its
   `<base href="/">` (jaspr writes it); relative links resolve against it.
 * `deploy` throws "The last site build is for prod, not dev": build the

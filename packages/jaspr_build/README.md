@@ -29,9 +29,9 @@ build to `deploy/firebase/hosting/public`.
 
 ## Setup
 
-In the site package (a standalone package, outside any workspace on
-analyzer 13: `jaspr_builder` and `jaspr_cli` 0.23 need analyzer 12) or in a
-support package:
+In the site package (a standalone package; `jaspr_builder` and `jaspr_cli`
+0.23 needed analyzer 12, 0.24 (the first on Dart 3.14) needs analyzer 13+)
+or in a support package:
 
 ```yaml
 dev_dependencies:
@@ -126,9 +126,9 @@ encoding answers 404. A capture whose Chrome went away fails with a
 
 ## Notes
 
-- `jaspr build` uses a fixed proxy port (5567): two jaspr builds on the same
-  machine at the same time fail with "Address already in use". Run them one
-  after the other.
+- jaspr 0.24 picks the `jaspr build` proxy port among the free ones (from
+  5567): builds of several sites can run at the same time. With 0.23 the
+  port was fixed and a second build failed with "Address already in use".
 - The `i18n` folder is also reachable at `/i18n/...`: `firebase.json` gets a
   `X-Robots-Tag: noindex` rule on it. The rule follows the request path, so
   the copies served at the default urls do not get it.
