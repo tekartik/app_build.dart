@@ -14,7 +14,8 @@ description: >-
   built site with headless Chrome in jaspr_screenshot.dart
   (jasprSiteScreenshots, captureSiteScreenshots, jasprBuildScreenshotPages,
   SiteScreenshotPage, ScreenshotView, StaticSiteServer, HeadlessChrome,
-  PageScreenshotter, CdpSession), and the screens of a Flutter web app
+  PageScreenshotter, CdpSession; the last ones from tekartik_common_build
+  headless_chrome.dart, exported again), and the screens of a Flutter web app
   (captureFlutterWebScreenshots, FlutterWebScreenshotter,
   headlessChromeFlutterArguments).
 ---

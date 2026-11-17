@@ -119,7 +119,9 @@ else Chrome or Chromium on the path.
 as a single page app, Chrome started with `headlessChromeFlutterArguments`,
 each page in its language).
 
-The local server (`StaticSiteServer`) listens on 127.0.0.1 and serves only
+The local server (`StaticSiteServer`, with `HeadlessChrome` and `CdpSession`
+from `package:tekartik_common_build`, exported by `jaspr_screenshot.dart`)
+listens on 127.0.0.1 and serves only
 the files of its folders: `..`, an encoded `/` (`..%2F`) or an invalid
 encoding answers 404. A capture whose Chrome went away fails with a
 `CdpException` instead of waiting.

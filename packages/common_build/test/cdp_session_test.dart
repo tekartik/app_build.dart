@@ -4,7 +4,7 @@ library;
 import 'dart:async';
 import 'dart:io';
 
-import 'package:tekartik_jaspr_build/jaspr_screenshot.dart';
+import 'package:tekartik_common_build/headless_chrome.dart';
 import 'package:test/test.dart';
 
 void main() {

@@ -8,7 +8,8 @@
 /// Chrome is `CHROME_EXECUTABLE`, else Chrome or Chromium on the path.
 library;
 
-export 'src/cdp_screenshot.dart'
+// From tekartik_common_build (headless_chrome.dart), exported as before.
+export 'package:tekartik_common_build/headless_chrome.dart'
     show
         ScreenshotView,
         screenshotDesktop,
@@ -22,18 +23,17 @@ export 'src/cdp_screenshot.dart'
         HeadlessChrome,
         PageScreenshotter,
         pngSize;
-export 'src/flutter_web_screenshots.dart'
+// From tekartik_common_build (site_screenshots.dart), exported as before.
+export 'package:tekartik_common_build/site_screenshots.dart'
     show
         headlessChromeFlutterArguments,
         flutterWebSplashHidden,
         FlutterWebScreenshotter,
-        captureFlutterWebScreenshots;
-export 'src/site_screenshots.dart'
-    show
+        captureFlutterWebScreenshots,
         SiteScreenshotPage,
-        jasprBuildScreenshotPages,
         captureSiteScreenshots,
-        jasprSiteScreenshots,
         screenshotPageUrl,
         withScreenshotSite,
         captureScreenshotFiles;
+export 'src/site_screenshots.dart'
+    show jasprBuildScreenshotPages, jasprSiteScreenshots;

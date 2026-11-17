@@ -1,7 +1,7 @@
-/// Screenshots of a static site with headless Chrome, driven through the
-/// DevTools protocol: a local server for the build (and other folders), the
-/// views (size, scale, phone, light or dark), full page captures, and an
-/// optional script run in the page before the capture.
+/// Headless Chrome driven through the DevTools protocol ([HeadlessChrome],
+/// [CdpSession]) and screenshots of a static site ([StaticSiteServer] serves
+/// the build): the views (size, scale, phone, light or dark), full page
+/// captures, and an optional script run in the page before the capture.
 ///
 /// Chrome runs in a process_run [Shell]; the DevTools connection is a
 /// dart:io [WebSocket].
@@ -16,7 +16,7 @@ import 'dart:typed_data';
 import 'package:dev_build/shell.dart';
 import 'package:path/path.dart';
 
-import 'html_scan.dart' show jasprBuildFileOfPath;
+import 'static_site_server.dart';
 
 /// A browser window to capture a page in.
 class ScreenshotView {
@@ -68,97 +68,6 @@ const screenshotDesktopDark = ScreenshotView(
   height: 900,
   dark: true,
 );
-
-/// A static file server on a free local port: [root] at `/`, and other
-/// folders at their url prefix ([mounts], `/prefix/` to folder). A folder
-/// url serves its `index.html`, a missing file the root's `404.html`.
-/// Listens on 127.0.0.1; only the files within the folders are served
-/// (see `jasprBuildFileOfPath`: no `..`, no encoded `/` in a segment).
-///
-/// With [spa] (a single page app, a Flutter web build with the path url
-/// strategy), a missing url without an extension serves the root's
-/// `index.html` instead, as the Hosting rewrite of the app does.
-class StaticSiteServer {
-  final HttpServer _server;
-  final Map<String, String> _mounts;
-
-  /// A single page app: the unknown paths serve the root's `index.html`.
-  final bool spa;
-
-  StaticSiteServer._(this._server, this._mounts, {required this.spa});
-
-  /// Starts serving [root] and [mounts], as a single page app when [spa].
-  static Future<StaticSiteServer> start(
-    String root, {
-    Map<String, String> mounts = const {},
-    bool spa = false,
-  }) async {
-    var server = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-    var siteServer = StaticSiteServer._(server, {
-      // The longest prefix first.
-      for (var prefix
-          in mounts.keys.toList()..sort((a, b) => b.length - a.length))
-        prefix: mounts[prefix]!,
-      '/': root,
-    }, spa: spa);
-    server.listen(siteServer._serve);
-    return siteServer;
-  }
-
-  /// The server url, without a trailing slash.
-  Uri get uri => Uri.parse('http://127.0.0.1:${_server.port}');
-
-  Future<void> _serve(HttpRequest request) async {
-    var response = request.response;
-    try {
-      var path = request.uri.path;
-      var prefix = _mounts.keys.firstWhere(path.startsWith);
-      var file = _file(_mounts[prefix]!, '/${path.substring(prefix.length)}');
-      if (file == null && spa && extension(path).isEmpty) {
-        file = _file(_mounts['/']!, '/index.html');
-      }
-      if (file == null) {
-        response.statusCode = HttpStatus.notFound;
-        file = _file(_mounts['/']!, '/404.html');
-      }
-      if (file != null) {
-        response.headers.contentType = _contentType(file.path);
-        await response.addStream(file.openRead());
-      }
-    } catch (e) {
-      response.statusCode = HttpStatus.internalServerError;
-    }
-    await response.close();
-  }
-
-  /// The file Hosting serves for the url [path] of [folder].
-  static File? _file(String folder, String path) {
-    var file = jasprBuildFileOfPath(folder, path);
-    return file == null ? null : File(file);
-  }
-
-  static ContentType _contentType(String path) =>
-      switch (extension(path).toLowerCase()) {
-        '.html' => ContentType.html,
-        '.css' => ContentType('text', 'css', charset: 'utf-8'),
-        '.js' || '.mjs' => ContentType('text', 'javascript', charset: 'utf-8'),
-        '.json' => ContentType.json,
-        '.svg' => ContentType('image', 'svg+xml'),
-        '.png' => ContentType('image', 'png'),
-        '.webp' => ContentType('image', 'webp'),
-        '.jpg' || '.jpeg' => ContentType('image', 'jpeg'),
-        '.ico' => ContentType('image', 'x-icon'),
-        '.woff2' => ContentType('font', 'woff2'),
-        // CanvasKit and skwasm only compile a wasm served as such.
-        '.wasm' => ContentType('application', 'wasm'),
-        '.xml' => ContentType('application', 'xml', charset: 'utf-8'),
-        '.txt' || '.md' => ContentType.text,
-        _ => ContentType.binary,
-      };
-
-  /// Stops serving.
-  Future<void> close() => _server.close(force: true);
-}
 
 /// A DevTools protocol error.
 class CdpException implements Exception {

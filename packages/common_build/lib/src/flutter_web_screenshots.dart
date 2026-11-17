@@ -8,7 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
-import 'cdp_screenshot.dart';
+import 'headless_chrome.dart';
 import 'site_screenshots.dart';
 
 /// The Chrome arguments a Flutter web app needs to draw in headless Chrome:

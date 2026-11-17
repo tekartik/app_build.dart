@@ -9,6 +9,9 @@ Small helpers for the build scripts of a Dart or Flutter package
 | `common_app_builder.dart` | `CommonAppBuilder` + `CommonAppBuilderExt`: the same version operations on any builder class with a `path` |
 | `formatter.dart` | `formatSize(bytes)`: `1.177 MB` (1024 based, 3 decimals) |
 | `serve_dir.dart` | `DirServeBuilder`: serves a local folder over HTTP with `dhttpd` |
+| `static_site_server.dart` | `StaticSiteServer`: serves a build folder on a free local port as a static host does (folder urls to `index.html`, `404.html`, a single page app option); `staticSiteFileOfPath` |
+| `headless_chrome.dart` | `HeadlessChrome` (a temporary profile, its DevTools port), `CdpSession` (calls, `evaluate`, events such as `Inspector.targetCrashed`), `PageScreenshotter` and the views; exports `static_site_server.dart` |
+| `site_screenshots.dart` | `captureSiteScreenshots` (chosen pages of a served or deployed site in chosen views), `captureFlutterWebScreenshots` / `FlutterWebScreenshotter` (a Flutter web app, CanvasKit without a GPU), `captureScreenshotFiles`, `withScreenshotSite`; exports `headless_chrome.dart` |
 
 ## Getting started
 

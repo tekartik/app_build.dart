@@ -1,6 +1,8 @@
 import 'dart:io';
 
 import 'package:path/path.dart' as p;
+import 'package:tekartik_common_build/static_site_server.dart'
+    show staticSiteFileOfPath;
 
 /// A tag found in a page and its attributes (names lowercased, values with
 /// `&amp;` decoded).
@@ -107,36 +109,8 @@ String jasprBuildPathOfFile(String relativeFile) {
 /// [path] is percent encoded (`Uri.path`). Only a file within [buildPath] is
 /// returned: a `..` segment, a segment that decodes to a `/` or a `\`
 /// (`..%2F`) and an invalid encoding give null.
-String? jasprBuildFileOfPath(String buildPath, String path) {
-  var segments = <String>[];
-  for (var segment in path.split('/')) {
-    if (segment.isEmpty) {
-      continue;
-    }
-    String decoded;
-    try {
-      decoded = Uri.decodeComponent(segment);
-    } on ArgumentError {
-      return null;
-    }
-    if (decoded == '..' || decoded.contains('/') || decoded.contains(r'\')) {
-      return null;
-    }
-    segments.add(decoded);
-  }
-  var base = p.joinAll([buildPath, ...segments]);
-  if (!p.equals(buildPath, base) && !p.isWithin(buildPath, base)) {
-    return null;
-  }
-  if (!path.endsWith('/') && File(base).existsSync()) {
-    return base;
-  }
-  var index = p.join(base, 'index.html');
-  if (File(index).existsSync()) {
-    return index;
-  }
-  return null;
-}
+String? jasprBuildFileOfPath(String buildPath, String path) =>
+    staticSiteFileOfPath(buildPath, path);
 
 /// The html files of [buildPath], relative and with `/` separators, sorted.
 List<String> jasprBuildHtmlFiles(String buildPath) {

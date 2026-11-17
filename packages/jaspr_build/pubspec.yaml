@@ -19,6 +19,11 @@ dependencies:
     git:
       url: https://github.com/tekartik/app_build.dart
       path: packages/firebase_build
+  # HeadlessChrome, CdpSession, StaticSiteServer (exported by jaspr_screenshot).
+  tekartik_common_build:
+    git:
+      url: https://github.com/tekartik/app_build.dart
+      path: packages/common_build
 
 dev_dependencies:
   lints: ">=6.1.0"
