@@ -15,6 +15,8 @@ import 'dart:typed_data';
 
 import 'package:dev_build/shell.dart';
 import 'package:path/path.dart';
+import 'package:tekartik_app_io_launcher/launcher.dart'
+    show findChromeExecutable;
 
 import 'static_site_server.dart';
 
@@ -171,33 +173,6 @@ class CdpSession {
 
   /// Closes the connection.
   Future<void> close() => _socket.close();
-}
-
-/// The Chrome executable: `CHROME_EXECUTABLE` (environment or the
-/// process_run user env file), else the first Chrome or Chromium found on
-/// the path, else the usual macOS location.
-String findChromeExecutable() {
-  var executable = userEnvironment['CHROME_EXECUTABLE'];
-  if (executable != null) {
-    return executable;
-  }
-  for (var command in const [
-    'google-chrome',
-    'google-chrome-stable',
-    'chromium',
-    'chromium-browser',
-    'chrome',
-  ]) {
-    var path = whichSync(command);
-    if (path != null) {
-      return path;
-    }
-  }
-  const mac = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  if (Platform.isMacOS && File(mac).existsSync()) {
-    return mac;
-  }
-  throw StateError('Chrome not found: set CHROME_EXECUTABLE');
 }
 
 /// Headless Chrome with its DevTools port open, in a temporary profile,

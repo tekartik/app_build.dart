@@ -15,6 +15,10 @@ dependencies:
   path: ">=1.9.1"
   fs_shim: ">=2.3.3+1"
   pub_semver: ">=2.2.0"
+  tekartik_app_io_launcher:
+    git:
+      url: https://github.com/tekartik/app_io_utils.dart
+      path: packages/app_launcher
   tekartik_prj_tktools:
     git:
       url: https://github.com/tekartikprj/tktools.git

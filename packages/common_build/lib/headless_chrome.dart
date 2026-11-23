@@ -6,6 +6,8 @@
 /// to a page, [StaticSiteServer] serves a build folder on a free local port.
 library;
 
+export 'package:tekartik_app_io_launcher/launcher.dart'
+    show findChromeExecutable;
 export 'src/headless_chrome.dart'
     show
         ScreenshotView,
@@ -15,7 +17,6 @@ export 'src/headless_chrome.dart'
         CdpException,
         CdpEvent,
         CdpSession,
-        findChromeExecutable,
         HeadlessChrome,
         PageScreenshotter,
         pngSize;

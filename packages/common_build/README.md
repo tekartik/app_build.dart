@@ -10,8 +10,9 @@ Small helpers for the build scripts of a Dart or Flutter package
 | `formatter.dart` | `formatSize(bytes)`: `1.177 MB` (1024 based, 3 decimals) |
 | `serve_dir.dart` | `DirServeBuilder`: serves a local folder over HTTP with `dhttpd` |
 | `static_site_server.dart` | `StaticSiteServer`: serves a build folder on a free local port as a static host does (folder urls to `index.html`, `404.html`, a single page app option); `staticSiteFileOfPath` |
-| `headless_chrome.dart` | `HeadlessChrome` (a temporary profile, its DevTools port), `CdpSession` (calls, `evaluate`, events such as `Inspector.targetCrashed`), `PageScreenshotter` and the views; exports `static_site_server.dart` |
+| `headless_chrome.dart` | `HeadlessChrome` (a temporary profile, its DevTools port; Chrome from `findChromeExecutable`, re-exported from `tekartik_app_io_launcher`), `CdpSession` (calls, `evaluate`, events such as `Inspector.targetCrashed`), `PageScreenshotter` and the views; exports `static_site_server.dart` |
 | `site_screenshots.dart` | `captureSiteScreenshots` (chosen pages of a served or deployed site in chosen views), `captureFlutterWebScreenshots` / `FlutterWebScreenshotter` (a Flutter web app, CanvasKit without a GPU), `captureScreenshotFiles`, `withScreenshotSite`; exports `headless_chrome.dart` |
+| `web_run.dart` | `webRun`: runs the regular `main()` of a Dart file in a headless Chrome (dart2js or dart2wasm, sound on), forwards its console, completes when `main` completes or throws a `WebRunException`; `files` served next to the page (a web worker); on the command line `dart run tekartik_common_build:web_run [--wasm] [--mute] [--file served=local] file.dart [args...]` |
 
 ## Getting started
 
