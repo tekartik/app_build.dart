@@ -76,6 +76,15 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   `APPLICATION_ID` of `linux/CMakeLists.txt` (the menu entry finds the
   window by it). Built on the machine's glibc: older systems need an older
   build machine.
+* Download package (Windows): `package:tekartik_flutter_build/windows_package.dart`,
+  `flutterWindowsPackage(bundleDir: flutterWindowsReleaseBundleDir(dir),
+  info: FlutterWindowsPackageInfo(name:, version:, executable:),
+  outputDir:)` after `flutter build windows --release`: the folder
+  `<name>-<version>-windows-<arch>` (the bundle and the Visual C++ runtime
+  libraries of `flutterWindowsRuntimeDir()`, so it runs without the
+  redistributable; `FlutterWindowsPackage.folder` is what an installer
+  packs) and its `.zip` with its sha256. `flutterWindowsFileVersion`
+  gives the `1.2.3.4` of a `1.2.3+4`. Not signed.
 
 ## Examples
 

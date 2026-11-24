@@ -59,6 +59,7 @@ otherwise (`FlutterWebAppBuildOptions.target` to choose).
 | `buildFindSecrets`, `buildCheckNoSecrets` (`build_secrets.dart`) | searches a build folder, an apk, an aab or an ipa for `BuildSecret` values |
 | `flutterWebAppsBuildSize`, `flutterWebBuildSizeWriteReport` | builds several apps and writes a markdown size report |
 | `flutterAppLauncherMain`, `FlutterAppHostLauncher` (`app_launcher.dart`) | the desktop app as a global command, below |
+| `flutterLinuxPackage` (`linux_package.dart`), `flutterWindowsPackage` (`windows_package.dart`) | the desktop release packaged for download, below |
 | `withFlutterTargetDevice`, `runFlutterDeviceTest` (`device_test.dart`) | the tests of an app on a device found or launched, below |
 
 A web build failing when it holds a server secret
@@ -167,6 +168,29 @@ outputDir:)`:
 Each with its size and SHA-256; folders 755 and files 644 whatever the
 umask. Uses `tar` and `dpkg-deb`. A build runs on the glibc of the machine
 that made it and newer.
+
+## Windows package for download
+
+`package:tekartik_flutter_build/windows_package.dart` packages the release
+bundle (`flutter build windows --release`,
+`flutterWindowsReleaseBundleDir(projectDir)`) of a desktop app with
+`flutterWindowsPackage(bundleDir:, info: FlutterWindowsPackageInfo(name:,
+version:, executable:), outputDir:)`:
+
+- the folder `<name>-<version>-windows-<arch>`: the bundle (without the
+  `.pdb`, `.lib` and `.exp` a build leaves) and the Visual C++ runtime
+  libraries next to the executable (`msvcp140.dll`, `vcruntime140.dll`,
+  `vcruntime140_1.dll`, from the redistributable folder of Visual Studio:
+  `flutterWindowsRuntimeDir()`), so it runs on a machine without the
+  Visual C++ redistributable. It is what an installer packs
+  (`FlutterWindowsPackage.folder`);
+- `<name>-<version>-windows-<arch>.zip`: that folder, with its size and
+  SHA-256; unzipped anywhere, the executable runs.
+
+`flutterWindowsFileVersion('1.2.3+4')` is `1.2.3.4`, the four numbers a
+Windows file or installer version wants. Pure Dart but for the search of
+the runtime (`runtimeDir:` elsewhere). Neither is signed: Windows
+SmartScreen warns on the first run of what was downloaded.
 
 ## Tests on a device
 

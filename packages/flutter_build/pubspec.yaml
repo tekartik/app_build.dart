@@ -1,6 +1,6 @@
 name: tekartik_flutter_build
 description: Flutter build and deploy helpers
-version: 0.2.6
+version: 0.2.7
 publish_to: none
 
 environment:
@@ -38,9 +38,10 @@ dependencies:
     git:
       url: https://github.com/tekartik/build_flutter.dart
       path: packages/build_flutter
-  # build_secrets.dart: the entries of an apk, an app bundle or an ipa
+  # build_secrets.dart: the entries of an apk, an app bundle or an ipa;
+  # windows_package.dart: the zip
   archive: ">=4.0.0"
-  # linux_package.dart: the sha256 of the files made
+  # linux_package.dart, windows_package.dart: the sha256 of the files made
   crypto: ">=3.0.0"
 dev_dependencies:
   test: ">=1.31.0"
