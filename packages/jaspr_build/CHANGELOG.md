@@ -1,3 +1,10 @@
+## 0.1.4
+
+- `JasprSite.build` on Windows: jaspr is started with the Dart that runs
+  the tool (`dartExecutable`), not `dart` by its name, a batch file there:
+  cmd read the `|` of the sitemap exclude pattern as a pipe ("The system
+  cannot find the path specified").
+
 ## 0.1.3
 
 - `jaspr_screenshot.dart`: the screens of a Flutter web app,

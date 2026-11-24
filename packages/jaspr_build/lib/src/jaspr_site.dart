@@ -108,9 +108,16 @@ class JasprSite {
   Future<void> build(JasprSiteFlavor flavor) async {
     var shell = Shell(workingDirectory: sitePath);
     await shell.run('dart pub get');
-    await shell.run(
-      'dart run jaspr_cli:jaspr build ${shellArguments(buildArguments(flavor))}',
-    );
+    // The Dart that runs this, not `dart` by its name: on Windows that one
+    // is a batch file (Flutter's `dart.bat`), and cmd reads the `|` of the
+    // sitemap pattern as a pipe ("The system cannot find the path
+    // specified").
+    await shell.runExecutableArguments(dartExecutable ?? 'dart', [
+      'run',
+      'jaspr_cli:jaspr',
+      'build',
+      ...buildArguments(flavor),
+    ]);
     await postBuild(flavor);
   }
 
