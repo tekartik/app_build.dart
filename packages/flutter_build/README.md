@@ -150,6 +150,24 @@ given on the command line: `macosSandbox: false` (both
 `flutterAppLauncherMain` and `FlutterAppHostLauncher`) disables the sandbox
 in the entitlements of the (git ignored) `macos/` project before each build.
 
+## Linux packages for download
+
+`package:tekartik_flutter_build/linux_package.dart` packages the release
+bundle (`flutter build linux --release`,
+`flutterLinuxReleaseBundleDir(projectDir)`) of a desktop app with
+`flutterLinuxPackage(bundleDir:, info: FlutterLinuxPackageInfo(...),
+outputDir:)`:
+
+- `<name>-<version>-linux-<arch>.tar.gz`: the bundle (`app/`), the menu
+  entry, the icon, `install.sh` (for the user: `~/.local/opt/<name>`,
+  `~/.local/bin/<name>`, the menu entry; no root) and `uninstall.sh`;
+- `<name>_<version>_<arch>.deb`: `/opt/<name>`, `/usr/bin/<name>`, the menu
+  entry, the icon, the dependencies of the info (`apt install ./x.deb`).
+
+Each with its size and SHA-256; folders 755 and files 644 whatever the
+umask. Uses `tar` and `dpkg-deb`. A build runs on the glibc of the machine
+that made it and newer.
+
 ## Tests on a device
 
 `package:tekartik_flutter_build/device_test.dart` runs `flutter test` on a

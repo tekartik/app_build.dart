@@ -67,8 +67,18 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   applies it to the entitlements of the `macos/` project, call
   `launcher.createHostProject()` before `flavorBuilder.runHost()` for a
   debug run. The release must be rebuilt (`<app> -- -u`).
+* Download packages (Linux): `package:tekartik_flutter_build/linux_package.dart`,
+  `flutterLinuxPackage(bundleDir: flutterLinuxReleaseBundleDir(dir), info:
+  FlutterLinuxPackageInfo(name:, displayName:, version:, executable:,
+  summary:, maintainer:, wmClass:, debDepends:), outputDir:)` after `flutter
+  build linux --release`: a `.tar.gz` with `install.sh` (no root) and a
+  `.deb` (`/opt/<name>`), each with its sha256. `wmClass` is the
+  `APPLICATION_ID` of `linux/CMakeLists.txt` (the menu entry finds the
+  window by it). Built on the machine's glibc: older systems need an older
+  build machine.
 
 ## Examples
+
 
 ### bin/my_app.dart
 
