@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:isolate';
 
@@ -70,6 +71,70 @@ class FlutterAppHostLauncher {
 
   /// True when the release was built and deployed.
   bool get isDeployed => File(deployedExePath).existsSync();
+
+  /// The `version.json` flutter writes in the assets of the deployed
+  /// release (`version`, `build_number`).
+  String get deployedVersionJsonPath {
+    if (Platform.isMacOS) {
+      return join(
+        deployPath,
+        '$packageName.app',
+        'Contents',
+        'Frameworks',
+        'App.framework',
+        'Resources',
+        'flutter_assets',
+        'version.json',
+      );
+    }
+    return join(deployPath, 'data', 'flutter_assets', 'version.json');
+  }
+
+  /// The version of the deployed release (`1.2.3+4`, read from
+  /// [deployedVersionJsonPath]), null when not deployed or unknown.
+  String? get deployedVersion {
+    try {
+      var map = jsonDecode(File(deployedVersionJsonPath).readAsStringSync());
+      if (map case {'version': String version}) {
+        if (map['build_number'] case String build
+            when build.isNotEmpty && build != version) {
+          return '$version+$build';
+        }
+        return version;
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// The version of the sources, the `version:` of the pubspec at [path]
+  /// (`1.2.3+4`), null when none.
+  String? get sourceVersion {
+    try {
+      var pubspec = loadYaml(
+        File(join(path, 'pubspec.yaml')).readAsStringSync(),
+      );
+      if (pubspec case {'version': Object version}) {
+        return version.toString();
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// True when the deployed release is not the version of its sources (the
+  /// pubspec version bumped since it was built), false when either version
+  /// is unknown. Only the version name is compared when the pubspec has no
+  /// build number.
+  bool get isOutdated {
+    var deployed = deployedVersion;
+    var source = sourceVersion;
+    if (deployed == null || source == null) {
+      return false;
+    }
+    if (source.contains('+')) {
+      return deployed != source;
+    }
+    return deployed.split('+').first != source;
+  }
 
   /// The pids of the running instances of the deployed release (the
   /// processes of [deployedExePath], whatever their arguments, see
@@ -144,13 +209,14 @@ class FlutterAppHostLauncher {
   }
 
   /// Runs the deployed release with [arguments] (see [run]), building it
-  /// first when not deployed yet or when [rebuild] or [pubUpgrade] is true.
+  /// first when not deployed yet, when [isOutdated] (the pubspec version
+  /// bumped) or when [rebuild] or [pubUpgrade] is true.
   Future<int> buildIfNeededAndRun({
     List<String> arguments = const [],
     bool rebuild = false,
     bool pubUpgrade = false,
   }) async {
-    if (rebuild || pubUpgrade || !isDeployed) {
+    if (rebuild || pubUpgrade || !isDeployed || isOutdated) {
       stdout.writeln('Building $packageName in $path');
       await build(pubUpgrade: pubUpgrade);
     }
@@ -174,10 +240,12 @@ class FlutterAppHostLauncher {
 
 /// Main of the global command of a flutter app (`bin/<packageName>.dart`):
 /// `<packageName> [app arguments] [-- --upgrade]` runs the built app with
-/// the arguments before `--`, building it first when needed. The launcher
-/// options come after `--`: `--kill` kills the running app first (a single
-/// instance app would show it instead of the new one), `--upgrade` kills it
-/// too, then rebuilds it.
+/// the arguments before `--`, building it first when needed: not deployed
+/// yet, or deployed with another version than the pubspec (a version bump
+/// kills the running app and rebuilds it). The launcher options come after
+/// `--`: `--kill` kills the running app first (a single instance app would
+/// show it instead of the new one), `--upgrade` kills it too, runs flutter
+/// pub upgrade, then rebuilds it.
 ///
 /// [appArgumentsUsage] (`[folder]`) and [description] are shown in the help,
 /// with [commandName] (the `executables:` name, [packageName] by default).
@@ -236,7 +304,10 @@ Future<void> flutterAppLauncherMain(
     if (description != null) {
       out.writeln(description);
     }
-    out.writeln('Built from its sources on the first run.');
+    out.writeln(
+      'Built from its sources on the first run, rebuilt when the version '
+      'of its pubspec changes.',
+    );
     out.writeln();
     out.writeln('Options (after --):');
     out.writeln(parser.usage);
@@ -278,9 +349,18 @@ Future<void> flutterAppLauncherMain(
   );
   var pubUpgrade = options.flag('pub-upgrade');
   var upgrade = options.flag('upgrade') || pubUpgrade;
+  // The pubspec version bumped since the build: rebuilt as on --upgrade,
+  // without flutter pub upgrade.
+  var outdated = !upgrade && launcher.isOutdated;
+  if (outdated) {
+    stdout.writeln(
+      '$packageName ${launcher.deployedVersion} is deployed, its sources are '
+      '${launcher.sourceVersion}: rebuilding',
+    );
+  }
   // An upgrade replaces the running release: a single instance app would
   // show the old one, Windows cannot replace its files.
-  if (options.flag('kill') || upgrade) {
+  if (options.flag('kill') || upgrade || outdated) {
     var killed = await launcher.kill();
     stdout.writeln(
       killed.isEmpty

@@ -2,6 +2,7 @@
 library;
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:path/path.dart';
@@ -156,10 +157,87 @@ packages:
       await Shell(verbose: false).run('chmod +x ${shellArgument(exe.path)}');
       expect(launcher.isDeployed, isTrue);
       expect(await launcher.buildIfNeededAndRun(arguments: ['.']), 3);
+
+      // The version of the pubspec, the one of the release: still no build.
+      await File(
+        join(dir.path, 'pubspec.yaml'),
+      ).writeAsString('name: my_app\nversion: 0.1.0+1\n');
+      var versionJson = File(launcher.deployedVersionJsonPath);
+      await versionJson.parent.create(recursive: true);
+      await versionJson.writeAsString(
+        '{"app_name":"my_app","version":"0.1.0","build_number":"1",'
+        '"package_name":"my_app"}',
+      );
+      expect(launcher.isOutdated, isFalse);
+      expect(await launcher.buildIfNeededAndRun(arguments: ['.']), 3);
     } finally {
       await dir.delete(recursive: true);
     }
   }, testOn: '!windows');
+
+  test('deployedVersion, sourceVersion, isOutdated', () async {
+    var dir = await Directory.systemTemp.createTemp('app_launcher_test');
+    try {
+      var launcher = FlutterAppHostLauncher(
+        packageName: 'my_app',
+        path: dir.path,
+      );
+      var pubspec = File(join(dir.path, 'pubspec.yaml'));
+      var versionJson = File(launcher.deployedVersionJsonPath);
+      await versionJson.parent.create(recursive: true);
+      Future<void> deploy(String version, [String? buildNumber]) =>
+          versionJson.writeAsString(
+            jsonEncode({
+              'app_name': 'my_app',
+              'version': version,
+              'build_number': ?buildNumber,
+              'package_name': 'my_app',
+            }),
+          );
+      Future<void> source(String? version) => pubspec.writeAsString(
+        'name: my_app\n${version == null ? '' : 'version: $version\n'}',
+      );
+
+      // Neither known: not outdated.
+      expect(launcher.deployedVersion, isNull);
+      expect(launcher.sourceVersion, isNull);
+      expect(launcher.isOutdated, isFalse);
+
+      await deploy('0.1.0', '1');
+      await source('0.1.0+1');
+      expect(launcher.deployedVersion, '0.1.0+1');
+      expect(launcher.sourceVersion, '0.1.0+1');
+      expect(launcher.isOutdated, isFalse);
+
+      // A version bump.
+      await source('0.2.0+2');
+      expect(launcher.isOutdated, isTrue);
+      // The build number alone.
+      await source('0.1.0+2');
+      expect(launcher.isOutdated, isTrue);
+
+      // No build number in the pubspec: the name only.
+      await source('0.1.0');
+      expect(launcher.isOutdated, isFalse);
+      await deploy('0.1.0', '0.1.0');
+      expect(launcher.deployedVersion, '0.1.0');
+      expect(launcher.isOutdated, isFalse);
+      await deploy('0.1.0');
+      expect(launcher.deployedVersion, '0.1.0');
+      await source('0.1.1');
+      expect(launcher.isOutdated, isTrue);
+
+      // No version in the pubspec, an unreadable version.json: unknown.
+      await source(null);
+      expect(launcher.isOutdated, isFalse);
+      await source('0.2.0');
+      await versionJson.writeAsString('not json');
+      expect(launcher.deployedVersion, isNull);
+      expect(launcher.isOutdated, isFalse);
+    } finally {
+      await dir.delete(recursive: true);
+    }
+  });
 
   test(
     'runningPids and kill',
