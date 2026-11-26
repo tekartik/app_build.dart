@@ -14,7 +14,7 @@ void main() {
   group('pubspecLockSourcePath', () {
     String? sourcePath(String lock) => pubspecLockSourcePath(
       lock,
-      package: 'tkassetexplorer',
+      package: 'my_app',
       lockDirPath: join('install', 'local'),
       pubCachePath: 'pub_cache',
     );
@@ -23,26 +23,26 @@ void main() {
       expect(
         sourcePath('''
 packages:
-  tkassetexplorer:
+  my_app:
     dependency: "direct main"
     description:
-      path: "/src/tools_flutter/packages/tkassetexplorer/."
+      path: "/src/my_tools/packages/my_app/."
       relative: false
     source: path
     version: "0.1.0+1"
 '''),
-        normalize('/src/tools_flutter/packages/tkassetexplorer'),
+        normalize('/src/my_tools/packages/my_app'),
       );
       expect(
         sourcePath('''
 packages:
-  tkassetexplorer:
+  my_app:
     description:
-      path: "../tkassetexplorer"
+      path: "../my_app"
       relative: true
     source: path
 '''),
-        join('install', 'tkassetexplorer'),
+        join('install', 'my_app'),
       );
     });
 
@@ -50,34 +50,34 @@ packages:
       expect(
         sourcePath('''
 packages:
-  tkassetexplorer:
+  my_app:
     dependency: "direct main"
     description:
-      path: "packages/tkassetexplorer"
+      path: "packages/my_app"
       ref: HEAD
       resolved-ref: c7c8fab79818417b5a4931cb9ef51618b5412724
-      url: "git@github.com:tekartikprv/tools_flutter.git"
+      url: "git@github.com:example/my_tools.git"
     source: git
 '''),
         join(
           'pub_cache',
           'git',
-          'tools_flutter-c7c8fab79818417b5a4931cb9ef51618b5412724',
+          'my_tools-c7c8fab79818417b5a4931cb9ef51618b5412724',
           'packages',
-          'tkassetexplorer',
+          'my_app',
         ),
       );
       expect(
         sourcePath('''
 packages:
-  tkassetexplorer:
+  my_app:
     description:
       ref: HEAD
       resolved-ref: abc
-      url: "https://github.com/tekartikprv/tools_flutter"
+      url: "https://github.com/example/my_tools"
     source: git
 '''),
-        join('pub_cache', 'git', 'tools_flutter-abc'),
+        join('pub_cache', 'git', 'my_tools-abc'),
       );
     });
 
@@ -89,7 +89,7 @@ packages:
       expect(
         sourcePath('''
 packages:
-  tkassetexplorer:
+  my_app:
     description:
       path: "."
       ref: HEAD
@@ -107,9 +107,9 @@ packages:
       expect(
         sourcePath('''
 packages:
-  tkassetexplorer:
+  my_app:
     description:
-      name: tkassetexplorer
+      name: my_app
       url: "https://pub.dev"
     source: hosted
 '''),
@@ -278,23 +278,17 @@ packages:
   });
 
   test('FlutterAppHostLauncher', () {
-    var launcher = FlutterAppHostLauncher(
-      packageName: 'tkassetexplorer',
-      path: 'app',
-    );
+    var launcher = FlutterAppHostLauncher(packageName: 'my_app', path: 'app');
     expect(launcher.path, normalize(absolute('app')));
     expect(
       isWithin(join(launcher.path, 'deploy'), launcher.deployPath),
       isTrue,
     );
-    expect(
-      basenameWithoutExtension(launcher.deployedExePath),
-      'tkassetexplorer',
-    );
+    expect(basenameWithoutExtension(launcher.deployedExePath), 'my_app');
     expect(launcher.macosSandbox, isNull);
     expect(
       FlutterAppHostLauncher(
-        packageName: 'tkassetexplorer',
+        packageName: 'my_app',
         macosSandbox: false,
       ).macosSandbox,
       isFalse,
