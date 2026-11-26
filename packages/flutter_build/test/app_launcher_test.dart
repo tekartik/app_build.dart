@@ -118,6 +118,165 @@ packages:
     });
   });
 
+  group('bin install', () {
+    const pathLock = '''
+packages:
+  my_app:
+    dependency: "direct main"
+    description:
+      path: "/src/my_tools/packages/my_app/."
+      relative: false
+    source: path
+    version: "0.1.0+1"
+''';
+    const gitLock = '''
+packages:
+  my_app:
+    dependency: "direct main"
+    description:
+      path: "packages/my_app"
+      ref: HEAD
+      resolved-ref: c7c8fab79818417b5a4931cb9ef51618b5412724
+      url: "git@github.com:example/my_tools.git"
+    source: git
+''';
+    test('pubspecLockDescriptor', () {
+      Map<String, Object?>? descriptor(String lock) => pubspecLockDescriptor(
+        lock,
+        package: 'my_app',
+        lockDirPath: join('install', 'local'),
+      );
+      expect(descriptor(pathLock), {
+        'path': normalize(absolute('/src/my_tools/packages/my_app')),
+      });
+      expect(
+        descriptor('''
+packages:
+  my_app:
+    description:
+      path: "../my_app"
+      relative: true
+    source: path
+'''),
+        {'path': normalize(absolute(join('install', 'my_app')))},
+      );
+      expect(descriptor(gitLock), {
+        'git': {
+          'url': 'git@github.com:example/my_tools.git',
+          'path': 'packages/my_app',
+          'ref': 'HEAD',
+        },
+      });
+      expect(
+        descriptor('''
+packages:
+  my_app:
+    description:
+      name: my_app
+      url: "https://pub.dev"
+    source: hosted
+'''),
+        {'hosted': 'https://pub.dev'},
+      );
+      expect(descriptor('packages:\n'), isNull);
+    });
+
+    test('dartInstallArguments, pubGlobalActivateArguments', () {
+      expect(dartInstallArguments('tkx', {'path': '/src/tkx'}), [
+        'install',
+        'tkx@{"path":"/src/tkx"}',
+      ]);
+      expect(dartInstallArguments('tkx', {}), ['install', 'tkx']);
+      expect(pubGlobalActivateArguments('tkx', {'path': '/src/tkx'}), [
+        'pub',
+        'global',
+        'activate',
+        '--source',
+        'path',
+        '/src/tkx',
+      ]);
+      expect(
+        pubGlobalActivateArguments('tkx', {
+          'git': {
+            'url': 'git@github.com:o/r.git',
+            'path': 'p/tkx',
+            'ref': 'HEAD',
+          },
+        }),
+        [
+          'pub',
+          'global',
+          'activate',
+          '--source',
+          'git',
+          'git@github.com:o/r.git',
+          '--git-path',
+          'p/tkx',
+          '--git-ref',
+          'HEAD',
+        ],
+      );
+      expect(pubGlobalActivateArguments('tkx', {'hosted': 'https://pub.dev'}), [
+        'pub',
+        'global',
+        'activate',
+        'tkx',
+        '--hosted-url',
+        'https://pub.dev',
+      ]);
+    });
+
+    test('flutterAppLauncherBinInstallArguments', () async {
+      var dir = await Directory.systemTemp.createTemp('bin_install');
+      addTearDown(() => dir.delete(recursive: true));
+      var pubCache = join(dir.path, 'pub_cache');
+      var sdkDart = join(dir.path, 'sdk', 'bin', 'dart');
+      List<String>? arguments({
+        String executable = '',
+        String? sourcePath = '/src/my_app',
+      }) => flutterAppLauncherBinInstallArguments(
+        packageName: 'my_app',
+        sourcePath: sourcePath,
+        executable: executable.isEmpty ? sdkDart : executable,
+        pubCachePath: pubCache,
+      );
+
+      // dart run in the sources.
+      expect(
+        arguments(),
+        dartInstallArguments('my_app', {'path': '/src/my_app'}),
+      );
+      expect(arguments(sourcePath: null), isNull);
+
+      // pub global activate: the lock of its global package (a path
+      // activation runs from the sources, as dart run).
+      var global = join(pubCache, 'global_packages', 'my_app');
+      await Directory(global).create(recursive: true);
+      await File(join(global, 'pubspec.lock')).writeAsString(pathLock);
+      expect(
+        arguments(),
+        pubGlobalActivateArguments('my_app', {
+          'path': normalize(absolute('/src/my_tools/packages/my_app')),
+        }),
+      );
+
+      // dart install (aot): the lock of the bundle, even when activated too.
+      var bundle = join(dir.path, 'app-bundles', 'my_app', 'local');
+      await Directory(join(bundle, 'bundle', 'bin')).create(recursive: true);
+      await File(join(bundle, 'pubspec.lock')).writeAsString(gitLock);
+      expect(
+        arguments(executable: join(bundle, 'bundle', 'bin', 'my_app')),
+        dartInstallArguments('my_app', {
+          'git': {
+            'url': 'git@github.com:example/my_tools.git',
+            'path': 'packages/my_app',
+            'ref': 'HEAD',
+          },
+        }),
+      );
+    });
+  });
+
   test('FlutterAppHostLauncher', () {
     var launcher = FlutterAppHostLauncher(
       packageName: 'tkassetexplorer',

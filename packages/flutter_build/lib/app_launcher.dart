@@ -11,4 +11,8 @@ export 'src/app_launcher.dart'
         flutterAppLauncherMain,
         findFlutterAppLauncherSourcePath,
         dartInstallSourcePath,
-        pubspecLockSourcePath;
+        pubspecLockSourcePath,
+        pubspecLockDescriptor,
+        flutterAppLauncherBinInstallArguments,
+        dartInstallArguments,
+        pubGlobalActivateArguments;

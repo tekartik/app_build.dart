@@ -245,7 +245,9 @@ class FlutterAppHostLauncher {
 /// kills the running app and rebuilds it). The launcher options come after
 /// `--`: `--kill` kills the running app first (a single instance app would
 /// show it instead of the new one), `--upgrade` kills it too, runs flutter
-/// pub upgrade, then rebuilds it.
+/// pub upgrade, then rebuilds it, `--bin-install` reinstalls the command
+/// itself (see [flutterAppLauncherBinInstallArguments]) without running the
+/// app.
 ///
 /// [appArgumentsUsage] (`[folder]`) and [description] are shown in the help,
 /// with [commandName] (the `executables:` name, [packageName] by default).
@@ -283,6 +285,14 @@ Future<void> flutterAppLauncherMain(
       help:
           'Run flutter pub upgrade in the app folder before building '
           '(implies --upgrade).',
+    )
+    ..addFlag(
+      'bin-install',
+      negatable: false,
+      help:
+          'Reinstall this command from its sources, the way it was installed '
+          '(dart install, or dart pub global activate), then exit: picks up '
+          'a change of the launcher itself. The app is not run.',
     )
     ..addFlag(
       'kill',
@@ -336,6 +346,14 @@ Future<void> flutterAppLauncherMain(
     packageName: packageName,
     libraryPath: libraryPath,
   );
+  if (options.flag('bin-install')) {
+    exitCode = await _binInstall(
+      commandName: commandName ?? packageName,
+      packageName: packageName,
+      sourcePath: sourcePath,
+    );
+    return;
+  }
   if (sourcePath == null) {
     stderr.writeln('$packageName sources not found');
     exitCode = 1;
@@ -378,6 +396,185 @@ Future<void> flutterAppLauncherMain(
     stderr.writeln('Build failed: ${e.message}');
     exitCode = 1;
   }
+}
+
+/// `--bin-install`: runs the `dart` command reinstalling the running
+/// launcher, returns its exit code.
+Future<int> _binInstall({
+  required String commandName,
+  required String packageName,
+  required String? sourcePath,
+}) async {
+  var arguments = flutterAppLauncherBinInstallArguments(
+    packageName: packageName,
+    sourcePath: sourcePath,
+    executable: Platform.resolvedExecutable,
+    pubCachePath: pubCachePath,
+  );
+  if (arguments == null) {
+    stderr.writeln('$packageName sources not found, cannot reinstall');
+    return 1;
+  }
+  var dart = dartExecutable ?? 'dart';
+  var commandText = shellArguments([dart, ...arguments]);
+  stdout.writeln('Reinstalling $commandName: $commandText');
+  var shell = Shell(
+    options: ShellOptions(
+      throwOnError: false,
+      verbose: false,
+      mode: ProcessStartMode.inheritStdio,
+    ),
+  );
+  var result = await shell.runExecutableArguments(dart, arguments);
+  if (result.exitCode != 0) {
+    // Windows cannot replace the executable of a running process.
+    stderr.writeln(
+      'Reinstall failed (exit code ${result.exitCode}), run it by hand: '
+      '$commandText',
+    );
+  }
+  return result.exitCode;
+}
+
+/// The `dart` arguments reinstalling the running launcher of [packageName]
+/// the way it was installed, null when unknown:
+/// - `dart install`-ed (AOT, [executable] in
+///   `app-bundles/<package>/<source>/bundle/bin`): `install`, from the
+///   `pubspec.lock` of its bundle (a path, a git repository);
+/// - otherwise (jit), when `dart pub global activate`-d (a `pubspec.lock` in
+///   `<pubCachePath>/global_packages/<packageName>`): `pub global activate`,
+///   from that lock. A path activation runs from the package config of its
+///   sources, as `dart run` there does: an activation is reactivated even
+///   from `dart run`;
+/// - otherwise (`dart run` in its sources): `install` of [sourcePath], null
+///   when null.
+///
+/// [executable] is `Platform.resolvedExecutable`, [pubCachePath] the pub
+/// cache.
+List<String>? flutterAppLauncherBinInstallArguments({
+  required String packageName,
+  required String? sourcePath,
+  required String executable,
+  required String pubCachePath,
+}) {
+  Map<String, Object?>? lockedDescriptor(String lockDirPath) {
+    var lockFile = File(join(lockDirPath, 'pubspec.lock'));
+    if (!lockFile.existsSync()) {
+      return null;
+    }
+    return pubspecLockDescriptor(
+      lockFile.readAsStringSync(),
+      package: packageName,
+      lockDirPath: lockDirPath,
+    );
+  }
+
+  var bundleDescriptor = lockedDescriptor(
+    dirname(dirname(dirname(executable))),
+  );
+  if (bundleDescriptor != null) {
+    return dartInstallArguments(packageName, bundleDescriptor);
+  }
+  var globalDescriptor = lockedDescriptor(
+    join(pubCachePath, 'global_packages', packageName),
+  );
+  if (globalDescriptor != null) {
+    return pubGlobalActivateArguments(packageName, globalDescriptor);
+  }
+  if (sourcePath == null) {
+    return null;
+  }
+  return dartInstallArguments(packageName, {'path': sourcePath});
+}
+
+/// `dart install` arguments of [packageName] from [descriptor] (see
+/// [pubspecLockDescriptor]): `install <package>@<descriptor as json>`.
+List<String> dartInstallArguments(
+  String packageName,
+  Map<String, Object?> descriptor,
+) => [
+  'install',
+  if (descriptor.isEmpty)
+    packageName
+  else
+    '$packageName@${jsonEncode(descriptor)}',
+];
+
+/// `dart pub global activate` arguments of [packageName] from [descriptor]
+/// (see [pubspecLockDescriptor]): `--source path` or `--source git` (with
+/// `--git-path` and `--git-ref`), the latest hosted version otherwise.
+List<String> pubGlobalActivateArguments(
+  String packageName,
+  Map<String, Object?> descriptor,
+) {
+  var activate = ['pub', 'global', 'activate'];
+  if (descriptor['path'] case String path) {
+    return [...activate, '--source', 'path', path];
+  }
+  if (descriptor['git'] case {'url': String gitUrl} && var git) {
+    return [
+      ...activate,
+      '--source',
+      'git',
+      gitUrl,
+      if (git['path'] case String path when path != '.') ...[
+        '--git-path',
+        path,
+      ],
+      if (git['ref'] case String ref) ...['--git-ref', ref],
+    ];
+  }
+  return [
+    ...activate,
+    packageName,
+    if (descriptor['hosted'] case String hostedUrl) ...[
+      '--hosted-url',
+      hostedUrl,
+    ],
+  ];
+}
+
+/// The pub descriptor of [package] locked in [lockContent] (a
+/// `pubspec.lock`), to install it again from the same source: `{path:
+/// abs}` (an absolute path, a relative one is resolved from [lockDirPath]),
+/// `{git: {url, path, ref}}` (the ref asked, not the commit resolved, to
+/// get its new commits) or `{hosted: <url>}` (the latest version); null
+/// when not locked or of another source.
+Map<String, Object?>? pubspecLockDescriptor(
+  String lockContent, {
+  required String package,
+  required String lockDirPath,
+}) {
+  var lock = loadYaml(lockContent);
+  if (lock is! Map) {
+    return null;
+  }
+  var locked = (lock['packages'] as Map?)?[package];
+  if (locked is! Map) {
+    return null;
+  }
+  var description = locked['description'];
+  if (description is! Map) {
+    return null;
+  }
+  switch (locked['source']) {
+    case 'path':
+      var path = description['path'] as String;
+      return {'path': normalize(absolute(join(lockDirPath, path)))};
+    case 'git':
+      return {
+        'git': {
+          'url': description['url'] as String,
+          if (description['path'] case String path) 'path': path,
+          if (description['ref'] case String ref) 'ref': ref,
+        },
+      };
+    case 'hosted':
+      return {
+        if (description['url'] case String hostedUrl) 'hosted': hostedUrl,
+      };
+  }
+  return null;
 }
 
 /// Finds the sources of the running launcher of [packageName], null if not
