@@ -56,6 +56,15 @@ class FlutterWebAppBuildOptions {
   /// stripped). Ignored without [wasm].
   final bool? noStripWasm;
 
+  /// Whether the app loads CanvasKit, skwasm and the fallback fonts from
+  /// Google's CDN (www.gstatic.com, fonts.gstatic.com) at runtime, the
+  /// Flutter default. Defaults to `false` when `null`: the build embeds
+  /// them (`--no-web-resources-cdn`, the `canvaskit/` folder of
+  /// `build/web`, already there in every build, served by the app's own
+  /// site), so that the app sends no request, and no visitor IP, to Google
+  /// before the user's consent (GDPR).
+  final bool? webResourcesCdn;
+
   /// Values the build must not contain (credentials held in server code),
   /// checked by [FlutterWebAppBuilder.buildOnly] after each build: it throws
   /// a [BuildSecretsFoundException] before anything is copied or deployed.
@@ -63,24 +72,26 @@ class FlutterWebAppBuildOptions {
   final List<BuildSecret>? secrets;
 
   /// Creates build options with the given [renderer], [wasm] flag,
-  /// [noStripWasm] flag and [target] entry point, each defaulting to `null`
-  /// (tool defaults).
+  /// [noStripWasm] flag, [webResourcesCdn] flag and [target] entry point,
+  /// each defaulting to `null` (the defaults of this builder).
   FlutterWebAppBuildOptions({
     this.renderer,
     this.wasm,
     this.noStripWasm,
+    this.webResourcesCdn,
     this.target,
     this.secrets,
   });
 
   /// Returns a copy of these options, overriding [renderer], [wasm],
-  /// [noStripWasm], [target] and/or [secrets] while keeping the rest
-  /// unchanged (`copyWith(wasm: true)` for the WebAssembly variant of the
-  /// same entry point).
+  /// [noStripWasm], [webResourcesCdn], [target] and/or [secrets] while
+  /// keeping the rest unchanged (`copyWith(wasm: true)` for the WebAssembly
+  /// variant of the same entry point).
   FlutterWebAppBuildOptions copyWith({
     FlutterWebRenderer? renderer,
     bool? wasm,
     bool? noStripWasm,
+    bool? webResourcesCdn,
     String? target,
     List<BuildSecret>? secrets,
   }) {
@@ -88,6 +99,7 @@ class FlutterWebAppBuildOptions {
       renderer: renderer ?? this.renderer,
       wasm: wasm ?? this.wasm,
       noStripWasm: noStripWasm ?? this.noStripWasm,
+      webResourcesCdn: webResourcesCdn ?? this.webResourcesCdn,
       target: target ?? this.target,
       secrets: secrets ?? this.secrets,
     );
@@ -102,10 +114,13 @@ String? flutterWebAppEntryPoint(String path) =>
 
 /// The `flutter build web` command of [FlutterWebAppBuilder.buildOnly]:
 /// `--wasm` when [wasm] (with `--no-strip-wasm` when [noStripWasm]),
-/// `--target` [target] when set and `--no-pub` when [noPub].
+/// `--no-web-resources-cdn` unless [webResourcesCdn] (see
+/// [FlutterWebAppBuildOptions.webResourcesCdn]), `--target` [target] when
+/// set and `--no-pub` when [noPub].
 String flutterWebBuildCommand({
   bool wasm = false,
   bool noStripWasm = false,
+  bool webResourcesCdn = false,
   String? target,
   bool noPub = false,
 }) {
@@ -115,6 +130,9 @@ String flutterWebBuildCommand({
     if (noStripWasm) {
       sb.write(' --no-strip-wasm');
     }
+  }
+  if (!webResourcesCdn) {
+    sb.write(' --no-web-resources-cdn');
   }
   if (target != null) {
     sb.write(' --target ${shellArgument(target)}');
@@ -278,8 +296,9 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       options.buildOptions?.target ?? flutterWebAppEntryPoint(path);
 
   /// Runs `flutter build web` (regenerating the version file first if
-  /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm` and
-  /// `noStripWasm` settings on the [entryPoint], then logs the built JS (and
+  /// needed), applying [FlutterWebAppOptions.buildOptions]' `wasm`,
+  /// `noStripWasm` and `webResourcesCdn` settings (web resources embedded
+  /// by default) on the [entryPoint], then logs the built JS (and
   /// wasm) size (see [reportJsSize]). Passes `--no-pub` when [hasPubGetRun]
   /// reports `pub get` already ran for [path] (or its workspace).
   ///
@@ -307,6 +326,7 @@ class FlutterWebAppBuilder implements CommonAppBuilder {
       flutterWebBuildCommand(
         wasm: wasm,
         noStripWasm: buildOptions?.noStripWasm ?? false,
+        webResourcesCdn: buildOptions?.webResourcesCdn ?? false,
         target: entryPoint,
         noPub: await hasPubGetRun(),
       ),

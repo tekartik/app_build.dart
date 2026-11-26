@@ -50,26 +50,46 @@ void main() {
 
   group('command', () {
     test('build', () {
-      expect(flutterWebBuildCommand(), 'flutter build web');
+      // The web resources embedded by default, no request to Google.
+      expect(
+        flutterWebBuildCommand(),
+        'flutter build web --no-web-resources-cdn',
+      );
+      expect(
+        flutterWebBuildCommand(webResourcesCdn: true),
+        'flutter build web',
+      );
       expect(
         flutterWebBuildCommand(
           wasm: true,
           target: 'lib/main_dev.dart',
           noPub: true,
         ),
-        'flutter build web --wasm --target lib/main_dev.dart --no-pub',
+        'flutter build web --wasm --no-web-resources-cdn'
+        ' --target lib/main_dev.dart --no-pub',
       );
       // The names kept in the wasm.
       expect(
-        flutterWebBuildCommand(wasm: true, noStripWasm: true),
+        flutterWebBuildCommand(
+          wasm: true,
+          noStripWasm: true,
+          webResourcesCdn: true,
+        ),
         'flutter build web --wasm --no-strip-wasm',
       );
       expect(
-        flutterWebBuildCommand(wasm: true, noStripWasm: false),
+        flutterWebBuildCommand(
+          wasm: true,
+          noStripWasm: false,
+          webResourcesCdn: true,
+        ),
         'flutter build web --wasm',
       );
       // Meaningless without wasm.
-      expect(flutterWebBuildCommand(noStripWasm: true), 'flutter build web');
+      expect(
+        flutterWebBuildCommand(noStripWasm: true, webResourcesCdn: true),
+        'flutter build web',
+      );
     });
     test('run', () {
       expect(
@@ -119,6 +139,11 @@ void main() {
       expect(named.copyWith(target: 'lib/main.dart').noStripWasm, isTrue);
       expect(options.wasm, isNull);
       expect(wasm.copyWith(target: 'lib/main.dart').wasm, isTrue);
+      expect(options.webResourcesCdn, isNull);
+      var cdn = wasm.copyWith(webResourcesCdn: true);
+      expect(cdn.webResourcesCdn, isTrue);
+      expect(cdn.wasm, isTrue);
+      expect(cdn.copyWith(target: 'lib/main.dart').webResourcesCdn, isTrue);
     });
   });
 }
