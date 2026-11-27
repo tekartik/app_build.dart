@@ -1,6 +1,6 @@
 name: tekartik_flutter_build
 description: Flutter build and deploy helpers
-version: 0.2.9
+version: 0.2.10
 publish_to: none
 
 environment:
@@ -43,6 +43,8 @@ dependencies:
   archive: ">=4.0.0"
   # linux_package.dart, windows_package.dart: the sha256 of the files made
   crypto: ">=3.0.0"
+  # app_icon.dart: the icons of the host project, from one image of the app
+  image: ">=4.2.0"
 dev_dependencies:
   test: ">=1.31.0"
 resolution: workspace

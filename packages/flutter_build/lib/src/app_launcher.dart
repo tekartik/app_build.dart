@@ -8,6 +8,8 @@ import 'package:process_run/shell.dart';
 import 'package:tekartik_build_flutter/app_builder.dart';
 import 'package:yaml/yaml.dart';
 
+import 'app_icon.dart';
+
 /// Builds the release of the flutter app at [path] for the current host
 /// (desktop) and runs it.
 ///
@@ -163,7 +165,10 @@ class FlutterAppHostLauncher {
   }
 
   /// Creates the platform project (`linux/`, git ignored) when missing, then
-  /// applies [macosSandbox] on macos.
+  /// applies [macosSandbox] on macos and makes its icons from the image of
+  /// the app, when it has one: `img/app_icon.webp` (or `img/app_icon.png`)
+  /// of [path], see [flutterAppWriteIcons] (macos and windows; the files are
+  /// written only when they change).
   ///
   /// Called by [build], call it before `flavorBuilder.runHost()` (debug).
   Future<void> createHostProject() async {
@@ -174,6 +179,32 @@ class FlutterAppHostLauncher {
       } else {
         await appBuilder.macosDisableSandbox();
       }
+    }
+    await _writeIcons();
+  }
+
+  /// Makes the icons of the host project from the image of the app
+  /// ([flutterAppWriteIcons]). An image that cannot be read is reported and
+  /// the project keeps its icons: the app is built anyway.
+  Future<void> _writeIcons() async {
+    var iconPath = findFlutterAppIconPath(path);
+    if (iconPath == null) {
+      return;
+    }
+    try {
+      var written = await flutterAppWriteIcons(
+        appPath: path,
+        iconPath: iconPath,
+      );
+      if (written.isNotEmpty) {
+        stdout.writeln(
+          'App icon: ${written.length} file(s) written in '
+          '${relative(dirname(written.first), from: path)} from '
+          '${basename(iconPath)}',
+        );
+      }
+    } catch (e) {
+      stderr.writeln('App icon not applied: $e');
     }
   }
 

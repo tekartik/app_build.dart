@@ -10,7 +10,11 @@ description: >-
   isDeployed, macosSandbox), findFlutterAppLauncherSourcePath,
   pubspecLockSourcePath, and the dev menu items of
   package:tekartik_flutter_build/app_build_menu.dart
-  menuFlutterAppHostLauncherContent.
+  menuFlutterAppHostLauncherContent. Also when such an app needs an icon:
+  one image (img/app_icon.webp, made from the drawing img/app_icon.svg) the
+  launcher turns into the icons of the git ignored macos or windows project
+  (package:tekartik_flutter_build/app_icon.dart flutterAppWriteIcons,
+  flutterAppIconFromSvg, dart run tekartik_flutter_build:app_icon).
 ---
 
 # Flutter desktop app as a global command with tekartik_flutter_build
@@ -67,6 +71,24 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   applies it to the entitlements of the `macos/` project, call
   `launcher.createHostProject()` before `flavorBuilder.runHost()` for a
   debug run. The release must be rebuilt (`<app> -- -u`).
+* App icon (0.2.10): one image in the app package, `img/app_icon.webp` (or
+  `img/app_icon.png`; square, 1024 px, the picture filling it, clear corners
+  when rounded: 22.5 % of the width is the macOS shape).
+  `createHostProject` (so `build` and `runDebug`) makes the icons of the git
+  ignored host project from it, in pure Dart, written only when they change:
+  the `AppIcon.appiconset` of `macos/` (the picture at 824 of 1024, the
+  macOS margin), the `app_icon.ico` of `windows/` (16 to 256 px); nothing on
+  linux yet. Never commit generated icons, nor a platform folder for them.
+  A new image needs a rebuild (`<app> -- -u`, or a version bump). Alone:
+  `flutterAppWriteIcons(appPath:, iconPath:, platform:)` and
+  `findFlutterAppIconPath(appPath)` of
+  `package:tekartik_flutter_build/app_icon.dart`.
+* The drawing of the icon is kept next to it, `img/app_icon.svg` (square,
+  any size). After changing it, run `dart run tekartik_flutter_build:app_icon`
+  in the app folder (`flutterAppIconFromSvg(appPath:)`): the svg drawn at
+  1024 px into `img/app_icon.webp`, lossless, by `sips` on macOS, else
+  `rsvg-convert` or `inkscape`. Commit both files; a build reads the image
+  only and never needs a program drawing svg.
 * Download packages (Linux): `package:tekartik_flutter_build/linux_package.dart`,
   `flutterLinuxPackage(bundleDir: flutterLinuxReleaseBundleDir(dir), info:
   FlutterLinuxPackageInfo(name:, displayName:, version:, executable:,

@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:image/image.dart' as img;
 import 'package:path/path.dart';
 import 'package:process_run/shell.dart';
 import 'package:tekartik_flutter_build/app_launcher.dart';
@@ -294,6 +295,76 @@ packages:
       isFalse,
     );
   });
+
+  group('createHostProject app icon', () {
+    late Directory dir;
+    late FlutterAppHostLauncher launcher;
+
+    /// A file of the icon of the host project.
+    late File hostIcon;
+
+    /// The image of the sources the icons are made of.
+    late File appIcon;
+
+    setUp(() async {
+      dir = await Directory.systemTemp.createTemp('app_launcher_test');
+      appIcon = File(join(dir.path, 'img', 'app_icon.png'))
+        ..parent.createSync();
+      launcher = FlutterAppHostLauncher(packageName: 'my_app', path: dir.path);
+      // The host project as far as its icon goes: it exists, so that it is
+      // not created (no flutter here).
+      if (Platform.isMacOS) {
+        var iconSet = join(
+          dir.path,
+          'macos',
+          'Runner',
+          'Assets.xcassets',
+          'AppIcon.appiconset',
+        );
+        hostIcon = File(join(iconSet, 'app_icon_16.png'));
+        File(join(iconSet, 'Contents.json'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(
+            '{"images": [{"size": "16x16", "scale": "1x", '
+            '"filename": "app_icon_16.png"}]}',
+          );
+      } else {
+        hostIcon = File(
+          join(dir.path, 'windows', 'runner', 'resources', 'app_icon.ico'),
+        );
+      }
+      hostIcon
+        ..createSync(recursive: true)
+        ..writeAsStringSync('the icon of flutter create');
+    });
+    tearDown(() => dir.delete(recursive: true));
+
+    test('made from the img/app_icon.png of the sources', () async {
+      appIcon.writeAsBytesSync(
+        img.encodePng(
+          img.Image(width: 64, height: 64, numChannels: 4)
+            ..clear(img.ColorRgba8(255, 0, 0, 255)),
+        ),
+      );
+
+      await launcher.createHostProject();
+
+      var icon = img.decodeImage(hostIcon.readAsBytesSync())!;
+      var middle = icon.getPixel(icon.width ~/ 2, icon.height ~/ 2);
+      expect([middle.r, middle.g, middle.b, middle.a], [255, 0, 0, 255]);
+    });
+
+    test(
+      'an img/app_icon.png that is no image: the icon stays, no error',
+      () async {
+        appIcon.writeAsStringSync('not an image');
+
+        await launcher.createHostProject();
+
+        expect(hostIcon.readAsStringSync(), 'the icon of flutter create');
+      },
+    );
+  }, skip: Platform.isLinux ? 'A linux project has no icon' : false);
 
   test('buildIfNeededAndRun deployed', () async {
     var dir = await Directory.systemTemp.createTemp('app_launcher_test');

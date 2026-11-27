@@ -151,6 +151,38 @@ given on the command line: `macosSandbox: false` (both
 `flutterAppLauncherMain` and `FlutterAppHostLauncher`) disables the sandbox
 in the entitlements of the (git ignored) `macos/` project before each build.
 
+### The app icon, from one image
+
+Put `img/app_icon.webp` (or `img/app_icon.png`) in the app package: one
+square image, 1024 px, the picture filling it (clear corners when it has
+rounded ones; rounded at 22.5 % of its width it gets the macOS shape).
+Before each build the launcher makes the icons of the (git ignored) host
+project from it, so they come back with a project created again:
+
+- macOS: each file of `macos/Runner/Assets.xcassets/AppIcon.appiconset`,
+  the picture at 824 of 1024 with the clear margin macOS icons have;
+- Windows: `windows/runner/resources/app_icon.ico`, 16 to 256 px, the
+  picture filling it;
+- Linux: nothing yet, its project has no icon.
+
+In pure Dart (`package:image`), nothing to install on the host; the files
+are written only when they change. A new image shows after a rebuild
+(`my_app -- --upgrade`, or a version bump). Without the launcher:
+`flutterAppWriteIcons(appPath:, iconPath:, platform:)` of
+`package:tekartik_flutter_build/app_icon.dart`.
+
+The image can be kept with its drawing, `img/app_icon.svg` (square, any
+size). After changing the drawing, make the image again and commit both:
+
+```bash
+dart run tekartik_flutter_build:app_icon   # in the app folder
+```
+
+It draws the svg at 1024 px into `img/app_icon.webp` (lossless;
+`flutterAppIconFromSvg`), with a program of the host: `sips` on macOS (part
+of the system), else `rsvg-convert` or `inkscape`. A build never draws the
+svg: it reads the image, so it needs none of them.
+
 ## Linux packages for download
 
 `package:tekartik_flutter_build/linux_package.dart` packages the release
