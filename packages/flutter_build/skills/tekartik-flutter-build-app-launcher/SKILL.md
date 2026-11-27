@@ -77,8 +77,16 @@ package sources and starts it. `flutterAppLauncherMain` is that executable.
   `createHostProject` (so `build` and `runDebug`) makes the icons of the git
   ignored host project from it, in pure Dart, written only when they change:
   the `AppIcon.appiconset` of `macos/` (the picture at 824 of 1024, the
-  macOS margin), the `app_icon.ico` of `windows/` (16 to 256 px); nothing on
-  linux yet. Never commit generated icons, nor a platform folder for them.
+  macOS margin), the `app_icon.ico` of `windows/` (16 to 256 px). On linux
+  (0.2.11) a project holds no icon: the launcher writes, in the data folder
+  of the user (`~/.local/share`, `FlutterAppHostLauncher.linuxDataHome`),
+  `icons/hicolor/256x256/apps/<application id>.png` and the menu entry
+  `applications/<application id>.desktop` (the `APPLICATION_ID` of
+  `linux/CMakeLists.txt`: the desktop matches the windows to it), replaced
+  later only if the launcher wrote it. An app writing its own menu entry
+  gives it `Icon=<application id>`. In a test, always pass a
+  `linuxDataHome` of the test: the default is the real home of the user.
+  Never commit generated icons, nor a platform folder for them.
   A new image needs a rebuild (`<app> -- -u`, or a version bump). Alone:
   `flutterAppWriteIcons(appPath:, iconPath:, platform:)` and
   `findFlutterAppIconPath(appPath)` of

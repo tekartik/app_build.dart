@@ -40,6 +40,30 @@ String? findFlutterAppIconPath(String appPath) {
   return null;
 }
 
+/// The size of the icon of a linux app in the icon theme of the user.
+const _linuxSize = 256;
+
+/// The line telling a linux menu entry was written by
+/// [flutterAppWriteIcons]: it only ever replaces its own entries.
+const _linuxDesktopEntryMark = 'X-Tekartik-Flutter-Build=app_icon';
+
+/// The menu entry of a flutter app on linux (its `.desktop` file), what
+/// makes the desktop show the icon of the app for its windows, see
+/// [flutterAppWriteIcons].
+class FlutterAppLinuxDesktopEntry {
+  /// The name of the app in the menu and under its icon.
+  final String name;
+
+  /// The executable the entry starts, an absolute path (the built app).
+  final String executable;
+
+  /// The entry of the app [name] starting [executable].
+  const FlutterAppLinuxDesktopEntry({
+    required this.name,
+    required this.executable,
+  });
+}
+
 /// Writes the icons of a platform project of the flutter app at [appPath]
 /// from one image, in pure Dart (nothing to install on the host).
 ///
@@ -55,7 +79,20 @@ String? findFlutterAppIconPath(String appPath) {
 ///   with a clear margin around it, as macos icons have;
 /// - `windows`: `windows/runner/resources/app_icon.ico`, the image filling
 ///   each of its sizes (16 to 256 pixels);
-/// - `linux`: nothing, its project has no icon.
+/// - `linux`: a linux project holds no icon, a desktop takes the one of a
+///   window from the menu entry named as its application id (the
+///   `APPLICATION_ID` of `linux/CMakeLists.txt`). So the files are written
+///   in the data folder of the user, outside the app: the image, 256 pixels
+///   and filling it, as
+///   `<data>/icons/hicolor/256x256/apps/<application id>.png`, and when
+///   [linuxDesktopEntry] is given, the menu entry
+///   `<data>/applications/<application id>.desktop` (its name, its
+///   executable, that icon, its windows matched by the application id).
+///
+/// [linuxDataHome] is that data folder, `$XDG_DATA_HOME` or
+/// `~/.local/share` when null. A menu entry that exists is replaced only
+/// when this function wrote it (it carries a line saying so): one written
+/// by the app itself or by hand is left as it is.
 ///
 /// Returns the paths of the files written: the ones whose content changed,
 /// so none when the icons are up to date, when the app has no image or when
@@ -66,6 +103,8 @@ Future<List<String>> flutterAppWriteIcons({
   required String appPath,
   String? iconPath,
   String? platform,
+  String? linuxDataHome,
+  FlutterAppLinuxDesktopEntry? linuxDesktopEntry,
 }) async {
   iconPath ??= findFlutterAppIconPath(appPath);
   if (iconPath == null) {
@@ -97,6 +136,24 @@ Future<List<String>> flutterAppWriteIcons({
           .encodeImages([for (var size in _windowsSizes) picture.draw(size)]);
     }
   }
+  // Linux: the icon theme of the user and the application id of the app.
+  String? linuxTheme;
+  String? linuxApplicationId;
+  if (platform == 'linux') {
+    var dataHome = linuxDataHome ?? _xdgDataHome();
+    linuxApplicationId = _linuxApplicationId(appPath);
+    if (dataHome != null && linuxApplicationId != null) {
+      linuxDataHome = dataHome;
+      linuxTheme = join(dataHome, 'icons', 'hicolor');
+      files[join(
+        linuxTheme,
+        '${_linuxSize}x$_linuxSize',
+        'apps',
+        '$linuxApplicationId.png',
+      )] = (picture) =>
+          img.encodePng(picture.draw(_linuxSize));
+    }
+  }
   if (files.isEmpty) {
     return const [];
   }
@@ -108,10 +165,108 @@ Future<List<String>> flutterAppWriteIcons({
     if (file.existsSync() && _sameBytes(await file.readAsBytes(), bytes)) {
       continue;
     }
+    await file.parent.create(recursive: true);
     await file.writeAsBytes(bytes, flush: true);
     written.add(path);
   }
+  if (linuxTheme != null) {
+    if (written.isNotEmpty) {
+      _touchDirectory(linuxTheme);
+    }
+    if (linuxDesktopEntry != null) {
+      var desktopFile = await _writeLinuxDesktopEntry(
+        join(linuxDataHome!, 'applications', '$linuxApplicationId.desktop'),
+        applicationId: linuxApplicationId!,
+        entry: linuxDesktopEntry,
+      );
+      if (desktopFile != null) {
+        written.add(desktopFile);
+      }
+    }
+  }
   return written;
+}
+
+/// The data folder of the user on linux: `$XDG_DATA_HOME` when it is an
+/// absolute path, else `~/.local/share`; null when the home is unknown.
+String? _xdgDataHome() {
+  var environment = Platform.environment;
+  var dataHome = environment['XDG_DATA_HOME'];
+  if (dataHome != null && isAbsolute(dataHome)) {
+    return dataHome;
+  }
+  var home = environment['HOME'];
+  return home == null || home.isEmpty ? null : join(home, '.local', 'share');
+}
+
+/// The GTK application id of the linux project of the app at [appPath] (the
+/// `APPLICATION_ID` of its `linux/CMakeLists.txt`, the name its windows are
+/// known by), null when it has no linux project or no id.
+String? _linuxApplicationId(String appPath) {
+  var cmakeLists = File(join(appPath, 'linux', 'CMakeLists.txt'));
+  if (!cmakeLists.existsSync()) {
+    return null;
+  }
+  return RegExp(
+    r'set\(\s*APPLICATION_ID\s+"([^"]+)"\s*\)',
+  ).firstMatch(cmakeLists.readAsStringSync())?.group(1);
+}
+
+/// Changes the modification time of the folder at [path] (a file made in it
+/// and deleted): a running desktop reads an icon theme again when its folder
+/// changed, which a file added in a sub folder it already had does not do.
+void _touchDirectory(String path) {
+  File(join(path, '.app_icon_changed'))
+    ..createSync()
+    ..deleteSync();
+}
+
+/// Writes the linux menu entry [entry] of the app [applicationId] at [path]
+/// (`<application id>.desktop`), unless it is up to date or the file there
+/// was not written by this function (no [_linuxDesktopEntryMark]).
+///
+/// Returns [path] when written, null otherwise.
+Future<String?> _writeLinuxDesktopEntry(
+  String path, {
+  required String applicationId,
+  required FlutterAppLinuxDesktopEntry entry,
+}) async {
+  var content = [
+    '[Desktop Entry]',
+    'Type=Application',
+    'Name=${entry.name}',
+    'Exec=${_linuxDesktopExec(entry.executable)}',
+    'Icon=$applicationId',
+    'Terminal=false',
+    'Categories=Utility;',
+    'StartupWMClass=$applicationId',
+    _linuxDesktopEntryMark,
+    '',
+  ].join('\n');
+  var file = File(path);
+  if (file.existsSync()) {
+    var existing = await file.readAsString();
+    if (existing == content || !existing.contains(_linuxDesktopEntryMark)) {
+      return null;
+    }
+  }
+  await file.parent.create(recursive: true);
+  await file.writeAsString(content, flush: true);
+  return path;
+}
+
+/// [executable] as the `Exec` of a linux menu entry: in double quotes when
+/// it holds a character the entry reserves (a space...), `%` doubled.
+String _linuxDesktopExec(String executable) {
+  var argument = executable;
+  if (RegExp(r'''[\s"'\\><~|&;$*?#()`]''').hasMatch(executable)) {
+    var escaped = executable.replaceAllMapped(
+      RegExp(r'["`$\\]'),
+      (match) => '\\${match[0]}',
+    );
+    argument = '"$escaped"';
+  }
+  return argument.replaceAll('%', '%%');
 }
 
 /// Draws the drawing of the icon of the flutter app at [appPath], an svg,

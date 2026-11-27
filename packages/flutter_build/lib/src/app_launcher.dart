@@ -34,6 +34,11 @@ class FlutterAppHostLauncher {
   /// `dtach`, a server it detached) keeps them across an upgrade.
   final bool killTree;
 
+  /// On linux, the data folder of the user the icon of the app and its menu
+  /// entry are written in ([createHostProject]); `$XDG_DATA_HOME` or
+  /// `~/.local/share` when null.
+  final String? linuxDataHome;
+
   /// The app builder.
   late final appBuilder = FlutterAppBuilder(
     context: FlutterAppContext(path: path),
@@ -49,6 +54,7 @@ class FlutterAppHostLauncher {
     String? path,
     this.macosSandbox,
     this.killTree = true,
+    this.linuxDataHome,
   }) : path = normalize(absolute(path ?? '.'));
 
   /// The deployed release folder, `deploy/linux` on linux.
@@ -167,8 +173,11 @@ class FlutterAppHostLauncher {
   /// Creates the platform project (`linux/`, git ignored) when missing, then
   /// applies [macosSandbox] on macos and makes its icons from the image of
   /// the app, when it has one: `img/app_icon.webp` (or `img/app_icon.png`)
-  /// of [path], see [flutterAppWriteIcons] (macos and windows; the files are
-  /// written only when they change).
+  /// of [path], see [flutterAppWriteIcons] (the files are written only when
+  /// they change). On macos and windows they are in the project; on linux,
+  /// where a project holds no icon, they are the icon of the app and its
+  /// menu entry (named [packageName], starting [deployedExePath]) in
+  /// [linuxDataHome], outside the app.
   ///
   /// Called by [build], call it before `flavorBuilder.runHost()` (debug).
   Future<void> createHostProject() async {
@@ -195,11 +204,19 @@ class FlutterAppHostLauncher {
       var written = await flutterAppWriteIcons(
         appPath: path,
         iconPath: iconPath,
+        linuxDataHome: linuxDataHome,
+        // On linux only: the entry of the deployed release.
+        linuxDesktopEntry: FlutterAppLinuxDesktopEntry(
+          name: packageName,
+          executable: deployedExePath,
+        ),
       );
       if (written.isNotEmpty) {
+        // In the host project, or (linux) in the data folder of the user.
+        var dir = dirname(written.first);
         stdout.writeln(
           'App icon: ${written.length} file(s) written in '
-          '${relative(dirname(written.first), from: path)} from '
+          '${isWithin(path, dir) ? relative(dir, from: path) : dir} from '
           '${basename(iconPath)}',
         );
       }

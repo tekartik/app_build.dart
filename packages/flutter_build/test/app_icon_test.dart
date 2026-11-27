@@ -24,6 +24,20 @@ const _macosContentsJson = '''
 }
 ''';
 
+/// The start of the `linux/CMakeLists.txt` `flutter create` makes.
+const _linuxCMakeLists = '''
+# Project-level configuration.
+cmake_minimum_required(VERSION 3.13)
+project(runner LANGUAGES CXX)
+
+# The name of the executable created for the application. Change this to change
+# the on-disk name of your application.
+set(BINARY_NAME "my_app")
+# The unique GTK application identifier for this application. See:
+# https://wiki.gnome.org/HowDoI/ChooseApplicationID
+set(APPLICATION_ID "com.example.my_app")
+''';
+
 /// A [width] x [height] image of one colour.
 img.Image _solid(int width, int height, int r, int g, int b, int a) =>
     img.Image(width: width, height: height, numChannels: 4)
@@ -323,6 +337,149 @@ void main() {
         ),
       );
       expect(File(ico).readAsStringSync(), 'the icon of flutter create');
+    });
+  });
+
+  group('flutterAppWriteIcons linux', () {
+    // The data folder of the user (~/.local/share), its icon theme, the icon
+    // and the menu entry of the app.
+    late String dataHome;
+    late String theme;
+    late File themeIcon;
+    late File desktopFile;
+
+    setUp(() {
+      dataHome = join(app.path, 'data_home');
+      theme = join(dataHome, 'icons', 'hicolor');
+      themeIcon = File(
+        join(theme, '256x256', 'apps', 'com.example.my_app.png'),
+      );
+      desktopFile = File(
+        join(dataHome, 'applications', 'com.example.my_app.desktop'),
+      );
+    });
+
+    /// The linux project of the app, as far as its application id goes.
+    void createLinuxProject() {
+      File(join(app.path, 'linux', 'CMakeLists.txt'))
+        ..createSync(recursive: true)
+        ..writeAsStringSync(_linuxCMakeLists);
+    }
+
+    /// The keys of the menu entry written.
+    Map<String, String> desktopEntry() => {
+      for (var line in desktopFile.readAsLinesSync())
+        if (line.contains('='))
+          line.substring(0, line.indexOf('=')): line.substring(
+            line.indexOf('=') + 1,
+          ),
+    };
+
+    Future<List<String>> write({String? executable}) => flutterAppWriteIcons(
+      appPath: app.path,
+      platform: 'linux',
+      linuxDataHome: dataHome,
+      linuxDesktopEntry: executable == null
+          ? null
+          : FlutterAppLinuxDesktopEntry(name: 'my_app', executable: executable),
+    );
+
+    test('the image in the icon theme of the user, named by the application '
+        'id', () async {
+      createLinuxProject();
+      writeIcon(_solid(64, 64, 255, 0, 0, 255));
+
+      var written = await write();
+
+      expect(written, [themeIcon.path]);
+      var icon = img.decodePng(themeIcon.readAsBytesSync())!;
+      expect([icon.width, icon.height], [256, 256]);
+      expect(_rgba(icon, 0, 0), [255, 0, 0, 255]);
+      expect(_rgba(icon, 255, 255), [255, 0, 0, 255]);
+      // No menu entry unless asked.
+      expect(Directory(join(dataHome, 'applications')).existsSync(), isFalse);
+    });
+
+    test('its menu entry: the app by its name, with that icon, its windows '
+        'matched by the application id', () async {
+      createLinuxProject();
+      writeIcon(_solid(64, 64, 255, 0, 0, 255));
+
+      var written = await write(executable: '/opt/my_app/my_app');
+
+      expect(written, unorderedEquals([themeIcon.path, desktopFile.path]));
+      expect(desktopFile.readAsLinesSync().first, '[Desktop Entry]');
+      var entry = desktopEntry();
+      expect(entry['Type'], 'Application');
+      expect(entry['Name'], 'my_app');
+      expect(entry['Exec'], '/opt/my_app/my_app');
+      expect(entry['Icon'], 'com.example.my_app');
+      expect(entry['StartupWMClass'], 'com.example.my_app');
+      expect(entry['Terminal'], 'false');
+    });
+
+    test('an executable in a folder with a space is quoted', () async {
+      createLinuxProject();
+      writeIcon(_solid(64, 64, 255, 0, 0, 255));
+
+      await write(executable: '/opt/my apps/my_app');
+
+      expect(desktopEntry()['Exec'], '"/opt/my apps/my_app"');
+    });
+
+    test('its menu entry follows the app: up to date, then moved', () async {
+      createLinuxProject();
+      writeIcon(_solid(64, 64, 255, 0, 0, 255));
+      await write(executable: '/opt/my_app/my_app');
+
+      expect(await write(executable: '/opt/my_app/my_app'), isEmpty);
+
+      expect(await write(executable: '/home/me/my_app/my_app'), [
+        desktopFile.path,
+      ]);
+      expect(desktopEntry()['Exec'], '/home/me/my_app/my_app');
+    });
+
+    test('a menu entry it did not write is left as it is', () async {
+      createLinuxProject();
+      writeIcon(_solid(64, 64, 255, 0, 0, 255));
+      desktopFile
+        ..createSync(recursive: true)
+        ..writeAsStringSync('[Desktop Entry]\nName=Mine\n');
+
+      var written = await write(executable: '/opt/my_app/my_app');
+
+      expect(written, [themeIcon.path]);
+      expect(desktopFile.readAsStringSync(), '[Desktop Entry]\nName=Mine\n');
+    });
+
+    test('a new icon in a theme that had some: the folder of the theme '
+        'changes, a running desktop reads it again', () async {
+      createLinuxProject();
+      writeIcon(_solid(64, 64, 255, 0, 0, 255));
+      themeIcon.parent.createSync(recursive: true);
+      await Shell(
+        verbose: false,
+      ).runExecutableArguments('touch', ['-t', '202001010000', theme]);
+      expect(Directory(theme).statSync().modified.year, 2020);
+
+      await write();
+
+      expect(Directory(theme).statSync().modified.year, greaterThan(2020));
+    }, testOn: '!windows');
+
+    test('no linux project: nothing written', () async {
+      writeIcon(_solid(64, 64, 255, 0, 0, 255));
+
+      expect(await write(executable: '/opt/my_app/my_app'), isEmpty);
+      expect(Directory(dataHome).existsSync(), isFalse);
+    });
+
+    test('no image: nothing written', () async {
+      createLinuxProject();
+
+      expect(await write(executable: '/opt/my_app/my_app'), isEmpty);
+      expect(Directory(dataHome).existsSync(), isFalse);
     });
   });
 

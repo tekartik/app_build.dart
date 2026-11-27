@@ -7,4 +7,8 @@
 library;
 
 export 'src/app_icon.dart'
-    show findFlutterAppIconPath, flutterAppIconFromSvg, flutterAppWriteIcons;
+    show
+        FlutterAppLinuxDesktopEntry,
+        findFlutterAppIconPath,
+        flutterAppIconFromSvg,
+        flutterAppWriteIcons;

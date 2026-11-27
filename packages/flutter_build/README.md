@@ -163,13 +163,22 @@ project from it, so they come back with a project created again:
   the picture at 824 of 1024 with the clear margin macOS icons have;
 - Windows: `windows/runner/resources/app_icon.ico`, 16 to 256 px, the
   picture filling it;
-- Linux: nothing yet, its project has no icon.
+- Linux: a linux project holds no icon, the desktop takes the one of a
+  window from the menu entry named as its application id (the
+  `APPLICATION_ID` of `linux/CMakeLists.txt`). So two files are written in
+  the data folder of the user (`$XDG_DATA_HOME`, `~/.local/share`), outside
+  the app: the icon, `icons/hicolor/256x256/apps/<application id>.png`, and
+  the menu entry, `applications/<application id>.desktop` (the package
+  name, the deployed release, that icon). A menu entry that is already
+  there is replaced only when the launcher wrote it: one the app writes
+  itself, or made by hand, is left as it is (give it `Icon=<application
+  id>`). They stay when the app is deleted: remove them by hand.
 
 In pure Dart (`package:image`), nothing to install on the host; the files
 are written only when they change. A new image shows after a rebuild
 (`my_app -- --upgrade`, or a version bump). Without the launcher:
-`flutterAppWriteIcons(appPath:, iconPath:, platform:)` of
-`package:tekartik_flutter_build/app_icon.dart`.
+`flutterAppWriteIcons(appPath:, iconPath:, platform:, linuxDataHome:,
+linuxDesktopEntry:)` of `package:tekartik_flutter_build/app_icon.dart`.
 
 The image can be kept with its drawing, `img/app_icon.svg` (square, any
 size). After changing the drawing, make the image again and commit both:

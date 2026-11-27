@@ -306,11 +306,20 @@ packages:
     /// The image of the sources the icons are made of.
     late File appIcon;
 
+    /// The data folder of the user on linux (`~/.local/share`), here a
+    /// folder of the test.
+    late String dataHome;
+
     setUp(() async {
       dir = await Directory.systemTemp.createTemp('app_launcher_test');
       appIcon = File(join(dir.path, 'img', 'app_icon.png'))
         ..parent.createSync();
-      launcher = FlutterAppHostLauncher(packageName: 'my_app', path: dir.path);
+      dataHome = join(dir.path, 'data_home');
+      launcher = FlutterAppHostLauncher(
+        packageName: 'my_app',
+        path: dir.path,
+        linuxDataHome: dataHome,
+      );
       // The host project as far as its icon goes: it exists, so that it is
       // not created (no flutter here).
       if (Platform.isMacOS) {
@@ -328,6 +337,22 @@ packages:
             '{"images": [{"size": "16x16", "scale": "1x", '
             '"filename": "app_icon_16.png"}]}',
           );
+      } else if (Platform.isLinux) {
+        // No icon in a linux project: in the icon theme of the user, named
+        // by the application id of the project.
+        File(join(dir.path, 'linux', 'CMakeLists.txt'))
+          ..createSync(recursive: true)
+          ..writeAsStringSync('set(APPLICATION_ID "com.example.my_app")\n');
+        hostIcon = File(
+          join(
+            dataHome,
+            'icons',
+            'hicolor',
+            '256x256',
+            'apps',
+            'com.example.my_app.png',
+          ),
+        );
       } else {
         hostIcon = File(
           join(dir.path, 'windows', 'runner', 'resources', 'app_icon.ico'),
@@ -352,6 +377,15 @@ packages:
       var icon = img.decodeImage(hostIcon.readAsBytesSync())!;
       var middle = icon.getPixel(icon.width ~/ 2, icon.height ~/ 2);
       expect([middle.r, middle.g, middle.b, middle.a], [255, 0, 0, 255]);
+      if (Platform.isLinux) {
+        // Its menu entry: the app by its name, starting the deployed release.
+        var entry = File(
+          join(dataHome, 'applications', 'com.example.my_app.desktop'),
+        ).readAsStringSync();
+        expect(entry, contains('Name=my_app\n'));
+        expect(entry, contains('Exec=${launcher.deployedExePath}\n'));
+        expect(entry, contains('Icon=com.example.my_app\n'));
+      }
     });
 
     test(
@@ -364,7 +398,7 @@ packages:
         expect(hostIcon.readAsStringSync(), 'the icon of flutter create');
       },
     );
-  }, skip: Platform.isLinux ? 'A linux project has no icon' : false);
+  });
 
   test('buildIfNeededAndRun deployed', () async {
     var dir = await Directory.systemTemp.createTemp('app_launcher_test');
