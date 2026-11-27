@@ -44,7 +44,8 @@ dependencies:
   # linux_package.dart, windows_package.dart: the sha256 of the files made
   crypto: ">=3.0.0"
   # app_icon.dart: the icons of the host project, from one image of the app
-  image: ">=4.2.0"
+  # (4.9.2: its ico and WebP encoders)
+  image: ">=4.9.2"
 dev_dependencies:
   test: ">=1.31.0"
 resolution: workspace
